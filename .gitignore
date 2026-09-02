@@ -1,0 +1,8 @@
+venv/
+__pycache__/
+*.pyc
+
+# Secretos — nunca al repo
+credentials.json
+token.json
+web_client.json
