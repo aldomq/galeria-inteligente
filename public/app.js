@@ -113,7 +113,7 @@ function tagChipsHtml(tags) {
 function cardHtml(photo) {
   return `
     <div class="card">
-      <p class="photo-name">${photo.name}</p>
+      <p class="photo-name" title="${photo.name}">${photo.name}</p>
       <img src="/api/photos/${photo.id}/image" alt="${photo.name}" loading="lazy" data-action="open-modal" data-id="${photo.id}" />
       <div class="card-body">
         <div class="tags">${tagChipsHtml(photo.tags)}</div>

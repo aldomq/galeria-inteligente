@@ -228,9 +228,12 @@ h1 {
 }
 
 .photo-name {
-  margin: 12px 14px 0;
+  margin: 12px 14px 10px;
   font-weight: 600;
   font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-body {
