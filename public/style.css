@@ -23,6 +23,11 @@
 
 * { box-sizing: border-box; }
 
+button:disabled, input:disabled, select:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 body {
   margin: 0;
   background: var(--bg);

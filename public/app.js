@@ -160,19 +160,27 @@ function renderModal() {
   }
 }
 
-async function shareImage(id, filename) {
-  const res = await fetch(`/api/photos/${id}/image`);
-  const blob = await res.blob();
-  const file = new File([blob], filename, { type: blob.type });
+async function shareImage(id, filename, btn) {
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Preparando…';
+  try {
+    const res = await fetch(`/api/photos/${id}/image`);
+    const blob = await res.blob();
+    const file = new File([blob], filename, { type: blob.type });
 
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file] });
-    } catch (err) {
-      if (err.name !== 'AbortError') alert('No se pudo compartir: ' + err.message);
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] });
+      } catch (err) {
+        if (err.name !== 'AbortError') alert('No se pudo compartir: ' + err.message);
+      }
+    } else {
+      alert('Tu navegador no soporta compartir archivos directamente. Probá desde el celular.');
     }
-  } else {
-    alert('Tu navegador no soporta compartir archivos directamente. Probá desde el celular.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
   }
 }
 
@@ -195,7 +203,7 @@ gallery.addEventListener('click', async (e) => {
 
   const shareBtn = e.target.closest('button[data-action="share"]');
   if (shareBtn) {
-    shareImage(shareBtn.dataset.id, shareBtn.dataset.filename);
+    shareImage(shareBtn.dataset.id, shareBtn.dataset.filename, shareBtn);
   }
 });
 
@@ -206,38 +214,58 @@ modal.addEventListener('click', (e) => {
 modalNameInput.addEventListener('change', async () => {
   const name = modalNameInput.value.trim();
   if (!name || !modalPhotoId) return;
-  await fetch(`/api/photos/${modalPhotoId}/name`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
-  });
-  photos = photos.map((p) => (p.id === modalPhotoId ? { ...p, name } : p));
-  render();
+  modalNameInput.disabled = true;
+  try {
+    await fetch(`/api/photos/${modalPhotoId}/name`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    photos = photos.map((p) => (p.id === modalPhotoId ? { ...p, name } : p));
+    render();
+  } finally {
+    modalNameInput.disabled = false;
+  }
 });
 
 modalAddTagForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const tag = modalTagSelect.value;
   if (!tag || !modalPhotoId) return;
-  const res = await fetch(`/api/photos/${modalPhotoId}/tags`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tag }),
-  });
-  const updated = await res.json();
-  photos = photos.map((p) => (p.id === modalPhotoId ? { ...p, tags: updated.tags } : p));
-  render();
+  const submitBtn = modalAddTagForm.querySelector('button');
+  modalTagSelect.disabled = true;
+  submitBtn.disabled = true;
+  try {
+    const res = await fetch(`/api/photos/${modalPhotoId}/tags`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tag }),
+    });
+    const updated = await res.json();
+    photos = photos.map((p) => (p.id === modalPhotoId ? { ...p, tags: updated.tags } : p));
+    render();
+  } finally {
+    modalTagSelect.disabled = false;
+    submitBtn.disabled = false;
+  }
 });
 
 modalTags.addEventListener('click', async (e) => {
   const btn = e.target.closest('button[data-action="modal-remove-tag"]');
   if (!btn || !modalPhotoId) return;
-  const res = await fetch(`/api/photos/${modalPhotoId}/tags/${encodeURIComponent(btn.dataset.tag)}`, {
-    method: 'DELETE',
-  });
-  const updated = await res.json();
-  photos = photos.map((p) => (p.id === modalPhotoId ? { ...p, tags: updated.tags } : p));
-  render();
+  btn.disabled = true;
+  btn.textContent = '…';
+  try {
+    const res = await fetch(`/api/photos/${modalPhotoId}/tags/${encodeURIComponent(btn.dataset.tag)}`, {
+      method: 'DELETE',
+    });
+    const updated = await res.json();
+    photos = photos.map((p) => (p.id === modalPhotoId ? { ...p, tags: updated.tags } : p));
+    render();
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = '✕';
+  }
 });
 
 loadPhotos();
