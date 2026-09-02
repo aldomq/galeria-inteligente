@@ -17,7 +17,17 @@ WEB_CLIENT_PATH = ROOT / "web_client.json"
 TOKEN_PATH = ROOT / "token.json"
 FOLDER_CONFIG_PATH = ROOT / "data" / "folder.json"
 
-SCOPES = ["https://www.googleapis.com/auth/drive.file"]
+SCOPES = [
+    # Lectura confiable de todas las fotos de la carpeta, sin importar quién
+    # las suba — drive.file solo (probado dos veces) puede "olvidar" el
+    # acceso a archivos ya existentes sin razón clara.
+    "https://www.googleapis.com/auth/drive.readonly",
+    # Escribir las etiquetas como propiedades de cada foto.
+    "https://www.googleapis.com/auth/drive.metadata",
+    # Crear y actualizar el contenido de _tags.json (el registro de
+    # etiquetas) — ese archivo lo crea la app, así que este scope alcanza.
+    "https://www.googleapis.com/auth/drive.file",
+]
 
 
 def _web_client():

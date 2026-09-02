@@ -1,7 +1,8 @@
-"""Capa de datos respaldada por Google Drive: reemplaza al store basado en
-data/photos.json. El acceso usa el scope drive.file, que solo alcanza la
-carpeta que el usuario eligió explícitamente en /connect.html — no toda
-la Drive — y no expira cada 7 días como pasaba en modo Prueba.
+"""Capa de datos respaldada por Google Drive. Usa drive.readonly +
+drive.metadata para leer fotos y escribir etiquetas de forma confiable
+(drive.file solo demostró perder acceso a archivos preexistentes sin
+razón clara). Mientras la app esté en modo Prueba en Google Cloud, el
+token hay que renovarlo cada ~7 días visitando /connect.html.
 
 Tags: se guardan como la propiedad `tags` (string separado por comas) en
 cada archivo de Drive, así viajan con la foto si algún día la mueves.

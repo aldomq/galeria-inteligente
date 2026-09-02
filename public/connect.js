@@ -49,10 +49,16 @@ function onPicked(data) {
   requestPermanentAccess(folder.id, folder.name);
 }
 
+const PERMANENT_SCOPES = [
+  'https://www.googleapis.com/auth/drive.readonly',
+  'https://www.googleapis.com/auth/drive.metadata',
+  'https://www.googleapis.com/auth/drive.file',
+].join(' ');
+
 function requestPermanentAccess(folderId, folderName) {
   const codeClient = google.accounts.oauth2.initCodeClient({
     client_id: clientId,
-    scope: 'https://www.googleapis.com/auth/drive.file',
+    scope: PERMANENT_SCOPES,
     ux_mode: 'popup',
     callback: async (resp) => {
       if (!resp.code) {
