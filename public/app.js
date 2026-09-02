@@ -2,6 +2,7 @@ let photos = [];
 let masterTags = [];
 let activeTag = null;
 let modalPhotoId = null;
+let modalDraft = null; // { name, tags } — cambios locales sin guardar todavía
 
 const gallery = document.getElementById('gallery');
 const tagCloud = document.getElementById('tag-cloud');
@@ -10,8 +11,9 @@ const modal = document.getElementById('photo-modal');
 const modalImage = document.getElementById('modal-image');
 const modalNameInput = document.getElementById('modal-name-input');
 const modalTags = document.getElementById('modal-tags');
-const modalAddTagForm = document.getElementById('modal-add-tag-form');
 const modalTagSelect = document.getElementById('modal-tag-select');
+const modalAddTagBtn = document.getElementById('modal-add-tag-btn');
+const modalSaveBtn = document.getElementById('modal-save-btn');
 
 async function loadPhotos() {
   const res = await fetch('/api/photos');
@@ -126,37 +128,43 @@ function cardHtml(photo) {
 }
 
 function openModal(id) {
+  const photo = photos.find((p) => p.id === id);
+  if (!photo) return;
   modalPhotoId = id;
+  modalDraft = { name: photo.name, tags: [...photo.tags] };
   renderModal();
   modal.hidden = false;
 }
 
 function closeModal() {
   modalPhotoId = null;
+  modalDraft = null;
   modal.hidden = true;
 }
 
 function renderModal() {
+  if (!modalDraft) return;
   const photo = photos.find((p) => p.id === modalPhotoId);
   if (!photo) return closeModal();
 
   modalImage.src = `/api/photos/${photo.id}/image`;
-  modalImage.alt = photo.name;
-  modalNameInput.value = photo.name;
+  modalImage.alt = modalDraft.name;
+  modalNameInput.value = modalDraft.name;
 
-  modalTags.innerHTML = photo.tags
+  modalTags.innerHTML = modalDraft.tags
     .map(
       (t) =>
         `<span class="tag" style="background:${tagColor(t)}">${t}<button type="button" data-action="modal-remove-tag" data-tag="${t}">✕</button></span>`
     )
     .join('');
 
-  const available = masterTags.filter((t) => !photo.tags.includes(t.name));
+  const available = masterTags.filter((t) => !modalDraft.tags.includes(t.name));
+  const addRow = document.getElementById('modal-add-tag-row');
   if (available.length) {
-    modalAddTagForm.hidden = false;
+    addRow.hidden = false;
     modalTagSelect.innerHTML = available.map((t) => `<option value="${t.name}">${t.name}</option>`).join('');
   } else {
-    modalAddTagForm.hidden = true;
+    addRow.hidden = true;
   }
 }
 
@@ -211,60 +219,63 @@ modal.addEventListener('click', (e) => {
   if (e.target === modal || e.target.closest('[data-action="close-modal"]')) closeModal();
 });
 
-modalNameInput.addEventListener('change', async () => {
-  const name = modalNameInput.value.trim();
-  if (!name || !modalPhotoId) return;
-  modalNameInput.disabled = true;
-  try {
-    await fetch(`/api/photos/${modalPhotoId}/name`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    });
-    photos = photos.map((p) => (p.id === modalPhotoId ? { ...p, name } : p));
-    render();
-  } finally {
-    modalNameInput.disabled = false;
-  }
-});
-
-modalAddTagForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
+modalAddTagBtn.addEventListener('click', () => {
   const tag = modalTagSelect.value;
-  if (!tag || !modalPhotoId) return;
-  const submitBtn = modalAddTagForm.querySelector('button');
-  modalTagSelect.disabled = true;
-  submitBtn.disabled = true;
-  try {
-    const res = await fetch(`/api/photos/${modalPhotoId}/tags`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tag }),
-    });
-    const updated = await res.json();
-    photos = photos.map((p) => (p.id === modalPhotoId ? { ...p, tags: updated.tags } : p));
-    render();
-  } finally {
-    modalTagSelect.disabled = false;
-    submitBtn.disabled = false;
-  }
+  if (!tag || !modalDraft || modalDraft.tags.includes(tag)) return;
+  modalDraft.tags.push(tag);
+  renderModal();
 });
 
-modalTags.addEventListener('click', async (e) => {
+modalTags.addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-action="modal-remove-tag"]');
-  if (!btn || !modalPhotoId) return;
-  btn.disabled = true;
-  btn.textContent = '…';
+  if (!btn || !modalDraft) return;
+  modalDraft.tags = modalDraft.tags.filter((t) => t !== btn.dataset.tag);
+  renderModal();
+});
+
+modalSaveBtn.addEventListener('click', async () => {
+  if (!modalPhotoId || !modalDraft) return;
+  const photo = photos.find((p) => p.id === modalPhotoId);
+  if (!photo) return;
+
+  const newName = modalNameInput.value.trim() || photo.name;
+  const toAdd = modalDraft.tags.filter((t) => !photo.tags.includes(t));
+  const toRemove = photo.tags.filter((t) => !modalDraft.tags.includes(t));
+
+  const original = modalSaveBtn.textContent;
+  modalSaveBtn.disabled = true;
+  modalSaveBtn.textContent = 'Guardando…';
+
   try {
-    const res = await fetch(`/api/photos/${modalPhotoId}/tags/${encodeURIComponent(btn.dataset.tag)}`, {
-      method: 'DELETE',
-    });
-    const updated = await res.json();
-    photos = photos.map((p) => (p.id === modalPhotoId ? { ...p, tags: updated.tags } : p));
+    if (newName !== photo.name) {
+      await fetch(`/api/photos/${modalPhotoId}/name`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName }),
+      });
+    }
+    // Secuencial: el servidor lee-modifica-escribe las tags de la foto,
+    // en paralelo una llamada podría pisar a la otra.
+    for (const tag of toAdd) {
+      await fetch(`/api/photos/${modalPhotoId}/tags`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tag }),
+      });
+    }
+    for (const tag of toRemove) {
+      await fetch(`/api/photos/${modalPhotoId}/tags/${encodeURIComponent(tag)}`, { method: 'DELETE' });
+    }
+
+    photos = photos.map((p) =>
+      p.id === modalPhotoId ? { ...p, name: newName, tags: [...modalDraft.tags] } : p
+    );
+    closeModal();
     render();
   } catch (err) {
-    btn.disabled = false;
-    btn.textContent = '✕';
+    alert('No se pudo guardar: ' + err.message);
+    modalSaveBtn.disabled = false;
+    modalSaveBtn.textContent = original;
   }
 });
 
