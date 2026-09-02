@@ -19,6 +19,19 @@
 
   <main id="gallery" class="gallery"></main>
 
+  <div id="photo-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <button type="button" class="modal-close" data-action="close-modal">✕</button>
+      <img id="modal-image" src="" alt="" />
+      <input id="modal-name-input" type="text" placeholder="Nombre de la foto" />
+      <div id="modal-tags" class="tags"></div>
+      <form id="modal-add-tag-form" class="add-tag">
+        <select id="modal-tag-select"></select>
+        <button type="submit">+</button>
+      </form>
+    </div>
+  </div>
+
   <script src="app.js?v=2"></script>
 </body>
 </html>

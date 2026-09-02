@@ -17,8 +17,10 @@ ROOT = Path(__file__).parent
 PUBLIC_DIR = ROOT / "public"
 
 PHOTO_IMAGE_RE = re.compile(r"^/api/photos/([^/]+)/image/?$")
+PHOTO_NAME_RE = re.compile(r"^/api/photos/([^/]+)/name/?$")
 PHOTO_TAGS_RE = re.compile(r"^/api/photos/([^/]+)/tags/?$")
 PHOTO_TAG_RE = re.compile(r"^/api/photos/([^/]+)/tags/([^/]+)$")
+TAG_COLOR_RE = re.compile(r"^/api/tags/([^/]+)/color/?$")
 TAG_RE = re.compile(r"^/api/tags/([^/]+)$")
 
 MIME_TYPES = {
@@ -115,6 +117,28 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, tags_store.add_tag(body.get("name") or ""))
             except ValueError as err:
                 self._json(400, {"error": str(err)})
+            return
+
+        color_match = TAG_COLOR_RE.match(self.path)
+        if color_match:
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length) or b"{}")
+            try:
+                self._json(200, tags_store.set_color(unquote(color_match.group(1)), body.get("color") or ""))
+            except ValueError as err:
+                self._json(400, {"error": str(err)})
+            return
+
+        name_match = PHOTO_NAME_RE.match(self.path)
+        if name_match:
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length) or b"{}")
+            try:
+                self._json(200, drive_store.set_name(name_match.group(1), body.get("name") or ""))
+            except ValueError as err:
+                self._json(400, {"error": str(err)})
+            except Exception as err:
+                self._json(500, {"error": str(err)})
             return
 
         match = PHOTO_TAGS_RE.match(self.path)

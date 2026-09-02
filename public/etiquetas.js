@@ -14,8 +14,13 @@ function render() {
   tagManagerList.innerHTML = masterTags.length
     ? masterTags
         .map(
-          (t) =>
-            `<span class="tag">${t}<button data-action="delete-tag" data-tag="${t}">✕</button></span>`
+          (t) => `
+            <span class="tag-row" style="background:${t.color}">
+              <span class="tag-name">${t.name}</span>
+              <input type="color" value="${t.color}" data-action="color" data-tag="${t.name}" />
+              <button data-action="delete-tag" data-tag="${t.name}">✕</button>
+            </span>
+          `
         )
         .join('')
     : `<span class="muted">Todavía no hay etiquetas creadas.</span>`;
@@ -40,6 +45,18 @@ tagManagerList.addEventListener('click', async (e) => {
   if (!btn) return;
   const res = await fetch(`/api/tags/${encodeURIComponent(btn.dataset.tag)}`, {
     method: 'DELETE',
+  });
+  masterTags = await res.json();
+  render();
+});
+
+tagManagerList.addEventListener('change', async (e) => {
+  const input = e.target.closest('input[data-action="color"]');
+  if (!input) return;
+  const res = await fetch(`/api/tags/${encodeURIComponent(input.dataset.tag)}/color`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ color: input.value }),
   });
   masterTags = await res.json();
   render();

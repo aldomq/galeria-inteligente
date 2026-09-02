@@ -78,17 +78,31 @@ def get_photos():
             .execute()
         )
         for f in resp.get("files", []):
+            properties = f.get("properties") or {}
             photos.append(
                 {
                     "id": f["id"],
                     "filename": f["name"],
-                    "tags": _tags_from_properties(f.get("properties")),
+                    "name": properties.get("display_name") or f["name"],
+                    "tags": _tags_from_properties(properties),
                 }
             )
         page_token = resp.get("nextPageToken")
         if not page_token:
             break
     return photos
+
+
+def set_name(photo_id, name):
+    clean = name.strip()
+    if not clean:
+        raise ValueError("nombre vacío")
+    service = _get_service()
+    service.files().update(
+        fileId=photo_id,
+        body={"properties": {"display_name": clean}},
+    ).execute()
+    return {"id": photo_id, "name": clean}
 
 
 def get_image(file_id):

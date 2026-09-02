@@ -1,10 +1,17 @@
 let photos = [];
 let masterTags = [];
 let activeTag = null;
+let modalPhotoId = null;
 
 const gallery = document.getElementById('gallery');
 const tagCloud = document.getElementById('tag-cloud');
 const search = document.getElementById('search');
+const modal = document.getElementById('photo-modal');
+const modalImage = document.getElementById('modal-image');
+const modalNameInput = document.getElementById('modal-name-input');
+const modalTags = document.getElementById('modal-tags');
+const modalAddTagForm = document.getElementById('modal-add-tag-form');
+const modalTagSelect = document.getElementById('modal-tag-select');
 
 async function loadPhotos() {
   const res = await fetch('/api/photos');
@@ -22,7 +29,12 @@ async function loadTags() {
   render();
 }
 
-function allTags() {
+function tagColor(name) {
+  const found = masterTags.find((t) => t.name === name);
+  return found ? found.color : '#6366f1';
+}
+
+function allTagNames() {
   const set = new Set();
   photos.forEach((p) => p.tags.forEach((t) => set.add(t)));
   return [...set].sort();
@@ -72,14 +84,14 @@ function matchesQuery(photo, tokens) {
 
 function render() {
   const tokens = tokenize(search.value);
-  const tags = allTags();
+  const tags = allTagNames();
 
   if (activeTag && !tags.includes(activeTag)) activeTag = null;
 
   tagCloud.innerHTML = tags
     .map(
       (t) =>
-        `<span class="tag-pill ${t === activeTag ? 'active' : ''}" data-tag="${t}">${t}</span>`
+        `<span class="tag-pill ${t === activeTag ? 'active' : ''}" style="background:${tagColor(t)}" data-tag="${t}">${t}</span>`
     )
     .join('');
 
@@ -88,38 +100,64 @@ function render() {
   gallery.innerHTML = visible.length
     ? visible.map(cardHtml).join('')
     : `<p class="empty">No hay fotos con esos tags todavía.</p>`;
+
+  if (modalPhotoId) renderModal();
+}
+
+function tagChipsHtml(tags) {
+  return tags
+    .map((t) => `<span class="tag" style="background:${tagColor(t)}">${t}</span>`)
+    .join('');
 }
 
 function cardHtml(photo) {
-  const tags = photo.tags
-    .map(
-      (t) =>
-        `<span class="tag">${t}<button data-action="remove" data-id="${photo.id}" data-tag="${t}">✕</button></span>`
-    )
-    .join('');
-
-  const available = masterTags.filter((t) => !photo.tags.includes(t));
-  const assignForm = available.length
-    ? `
-        <form class="add-tag" data-id="${photo.id}">
-          <select>${available.map((t) => `<option value="${t}">${t}</option>`).join('')}</select>
-          <button type="submit">+</button>
-        </form>
-      `
-    : `<p class="muted small">Crea o libera una etiqueta para poder asignarla.</p>`;
-
   return `
     <div class="card">
-      <img src="/api/photos/${photo.id}/image" alt="${photo.filename}" loading="lazy" />
+      <p class="photo-name">${photo.name}</p>
+      <img src="/api/photos/${photo.id}/image" alt="${photo.name}" loading="lazy" data-action="open-modal" data-id="${photo.id}" />
       <div class="card-body">
-        <div class="tags">${tags}</div>
-        ${assignForm}
+        <div class="tags">${tagChipsHtml(photo.tags)}</div>
         <button class="share-btn" data-action="share" data-id="${photo.id}" data-filename="${photo.filename}">
           Compartir
         </button>
       </div>
     </div>
   `;
+}
+
+function openModal(id) {
+  modalPhotoId = id;
+  renderModal();
+  modal.hidden = false;
+}
+
+function closeModal() {
+  modalPhotoId = null;
+  modal.hidden = true;
+}
+
+function renderModal() {
+  const photo = photos.find((p) => p.id === modalPhotoId);
+  if (!photo) return closeModal();
+
+  modalImage.src = `/api/photos/${photo.id}/image`;
+  modalImage.alt = photo.name;
+  modalNameInput.value = photo.name;
+
+  modalTags.innerHTML = photo.tags
+    .map(
+      (t) =>
+        `<span class="tag" style="background:${tagColor(t)}">${t}<button type="button" data-action="modal-remove-tag" data-tag="${t}">✕</button></span>`
+    )
+    .join('');
+
+  const available = masterTags.filter((t) => !photo.tags.includes(t.name));
+  if (available.length) {
+    modalAddTagForm.hidden = false;
+    modalTagSelect.innerHTML = available.map((t) => `<option value="${t.name}">${t.name}</option>`).join('');
+  } else {
+    modalAddTagForm.hidden = true;
+  }
 }
 
 async function shareImage(id, filename) {
@@ -148,34 +186,10 @@ tagCloud.addEventListener('click', (e) => {
 
 search.addEventListener('input', render);
 
-gallery.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target.closest('.add-tag');
-  if (!form) return;
-  const id = form.dataset.id;
-  const select = form.querySelector('select');
-  const tag = select.value;
-  if (!tag) return;
-  const res = await fetch(`/api/photos/${id}/tags`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tag }),
-  });
-  const updated = await res.json();
-  photos = photos.map((p) => (p.id === id ? updated : p));
-  render();
-});
-
 gallery.addEventListener('click', async (e) => {
-  const removeBtn = e.target.closest('button[data-action="remove"]');
-  if (removeBtn) {
-    const { id, tag } = removeBtn.dataset;
-    const res = await fetch(`/api/photos/${id}/tags/${encodeURIComponent(tag)}`, {
-      method: 'DELETE',
-    });
-    const updated = await res.json();
-    photos = photos.map((p) => (p.id === id ? updated : p));
-    render();
+  const img = e.target.closest('img[data-action="open-modal"]');
+  if (img) {
+    openModal(img.dataset.id);
     return;
   }
 
@@ -183,6 +197,47 @@ gallery.addEventListener('click', async (e) => {
   if (shareBtn) {
     shareImage(shareBtn.dataset.id, shareBtn.dataset.filename);
   }
+});
+
+modal.addEventListener('click', (e) => {
+  if (e.target === modal || e.target.closest('[data-action="close-modal"]')) closeModal();
+});
+
+modalNameInput.addEventListener('change', async () => {
+  const name = modalNameInput.value.trim();
+  if (!name || !modalPhotoId) return;
+  await fetch(`/api/photos/${modalPhotoId}/name`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  photos = photos.map((p) => (p.id === modalPhotoId ? { ...p, name } : p));
+  render();
+});
+
+modalAddTagForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const tag = modalTagSelect.value;
+  if (!tag || !modalPhotoId) return;
+  const res = await fetch(`/api/photos/${modalPhotoId}/tags`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tag }),
+  });
+  const updated = await res.json();
+  photos = photos.map((p) => (p.id === modalPhotoId ? { ...p, tags: updated.tags } : p));
+  render();
+});
+
+modalTags.addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-action="modal-remove-tag"]');
+  if (!btn || !modalPhotoId) return;
+  const res = await fetch(`/api/photos/${modalPhotoId}/tags/${encodeURIComponent(btn.dataset.tag)}`, {
+    method: 'DELETE',
+  });
+  const updated = await res.json();
+  photos = photos.map((p) => (p.id === modalPhotoId ? { ...p, tags: updated.tags } : p));
+  render();
 });
 
 loadPhotos();
