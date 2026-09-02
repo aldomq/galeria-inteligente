@@ -84,8 +84,13 @@ function matchesQuery(photo, tokens) {
   return tokens.every((token) => photo.tags.some((t) => tokenMatchesTag(token, t)));
 }
 
+function isPending(photo) {
+  return photo.tags.length === 0 || photo.name === photo.filename;
+}
+
 function render() {
-  const tokens = tokenize(search.value);
+  const query = search.value.trim().toLowerCase();
+  const isPendingCommand = query === '#pendientes';
   const tags = allTagNames();
 
   if (activeTag && !tags.includes(activeTag)) activeTag = null;
@@ -97,11 +102,15 @@ function render() {
     )
     .join('');
 
-  const visible = photos.filter((p) => matchesQuery(p, tokens));
+  const visible = isPendingCommand
+    ? photos.filter(isPending)
+    : photos.filter((p) => matchesQuery(p, tokenize(search.value)));
 
   gallery.innerHTML = visible.length
     ? visible.map(cardHtml).join('')
-    : `<p class="empty">No hay fotos con esos tags todavía.</p>`;
+    : isPendingCommand
+      ? `<p class="empty">Todas las fotos tienen nombre y etiquetas. 🎉</p>`
+      : `<p class="empty">No hay fotos con esos tags todavía.</p>`;
 
   if (modalPhotoId) renderModal();
 }
@@ -201,6 +210,11 @@ tagCloud.addEventListener('click', (e) => {
 });
 
 search.addEventListener('input', render);
+
+document.getElementById('pending-filter-btn').addEventListener('click', () => {
+  search.value = search.value.trim().toLowerCase() === '#pendientes' ? '' : '#pendientes';
+  render();
+});
 
 gallery.addEventListener('click', async (e) => {
   const img = e.target.closest('img[data-action="open-modal"]');
