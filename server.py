@@ -41,6 +41,7 @@ MIME_TYPES = {
     ".js": "application/javascript; charset=utf-8",
     ".svg": "image/svg+xml",
     ".json": "application/json; charset=utf-8",
+    ".webp": "image/webp",
 }
 
 
