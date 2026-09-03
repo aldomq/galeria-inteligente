@@ -123,10 +123,15 @@ h1 {
 }
 
 .info-wrap {
+  display: none;
   position: fixed;
   top: 16px;
   right: 16px;
   z-index: 10;
+}
+
+body.admin-mode .info-wrap {
+  display: block;
 }
 
 .info-icon {
@@ -269,6 +274,10 @@ h1 {
 
 #share-search-btn:hover {
   background: var(--accent-soft);
+}
+
+.tag-manager[hidden] {
+  display: none;
 }
 
 .tag-manager {
@@ -830,24 +839,41 @@ h1 {
   color: inherit;
 }
 
-/* Vista de link compartido: solo se ven los resultados, nada de
-   edición ni accesos de administración. */
-body.shared-view header > .nav-link,
-body.shared-view .info-wrap,
-body.shared-view .lock-link,
-body.shared-view #tag-cloud,
-body.shared-view #modal-name-input,
-body.shared-view #modal-add-tag-row,
-body.shared-view #modal-save-btn,
-body.shared-view #modal-tags button {
+/* La vista de participante es la que ve todo el mundo por defecto:
+   sin edición. Solo se activa al loguearse por el candado. */
+.admin-only {
   display: none;
 }
 
-.shared-links {
+body.admin-mode .admin-only#modal-name-input {
+  display: block;
+}
+
+body.admin-mode .admin-only.add-tag {
   display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  justify-content: center;
+}
+
+body.admin-mode .admin-only.save-btn {
+  display: block;
+}
+
+body.admin-mode a.admin-only {
+  display: inline;
+}
+
+body:not(.admin-mode) #modal-tags button {
+  display: none;
+}
+
+body.admin-mode #lock-link {
+  display: none;
+}
+
+/* Vista de link compartido (búsqueda puntual): se oculta la nube de
+   tags para que no se pueda "salir" del filtro haciendo click sin
+   querer en una etiqueta que no es la del link. */
+body.shared-view #tag-cloud {
+  display: none;
 }
 
 .empty {

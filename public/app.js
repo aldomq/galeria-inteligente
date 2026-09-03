@@ -4,6 +4,24 @@ let activeTag = null;
 let modalPhotoId = null;
 let modalDraft = null; // { name, tags } — cambios locales sin guardar todavía
 
+const STOPWORDS = new Set(['con', 'de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'al', 'un', 'una']);
+
+// La vista de participante (sin edición) es la que ve todo el mundo por
+// defecto. Solo se activa el modo admin con un token fresco obtenido al
+// loguearse por el candado — nunca se guarda, así que cada visita nueva
+// (sin ?t= en la URL) vuelve a la vista de participante.
+const adminToken = new URLSearchParams(location.search).get('t') || '';
+const isAdmin = !!adminToken;
+if (isAdmin) {
+  document.body.classList.add('admin-mode');
+  const manageLink = document.getElementById('manage-tags-link');
+  if (manageLink) manageLink.href = 'etiquetas.html?t=' + encodeURIComponent(adminToken);
+}
+
+function adminHeaders(extra) {
+  return Object.assign({ 'X-Admin-Token': adminToken }, extra || {});
+}
+
 // Si el link trae ?q= o ?tag=, es una búsqueda compartida: se precarga
 // el filtro y se oculta todo lo de edición/admin (vista solo para ver).
 (function applySharedFilterFromUrl() {
@@ -28,27 +46,16 @@ const modalSaveBtn = document.getElementById('modal-save-btn');
 const searchWrap = document.querySelector('.search-wrap');
 const sharedTitleWrap = document.getElementById('shared-title-wrap');
 const sharedTitle = document.getElementById('shared-title');
-const freeSearchToggle = document.getElementById('free-search-toggle');
-const fullCatalogLink = document.getElementById('full-catalog-link');
 
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 if (document.body.classList.contains('shared-view')) {
-  document.getElementById('page-title').textContent = 'FQ Monturas';
-  const filters = currentFilters();
-  sharedTitle.textContent = capitalize(describeFilters(filters));
+  sharedTitle.textContent = capitalize(describeFilters(currentFilters()));
   sharedTitleWrap.hidden = false;
   searchWrap.hidden = true;
-  if (!filters.length) fullCatalogLink.hidden = true;
 }
-
-freeSearchToggle.addEventListener('click', () => {
-  sharedTitleWrap.hidden = true;
-  searchWrap.hidden = false;
-  search.focus();
-});
 
 // La barra muestra cuántas fotos ya cargaron, pero SIN bloquear la
 // galería — con muchas fotos y un servidor que atiende de a una,
@@ -107,8 +114,6 @@ function allTagNames() {
   photos.forEach((p) => p.tags.forEach((t) => set.add(t)));
   return [...set].sort();
 }
-
-const STOPWORDS = new Set(['con', 'de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'al', 'un', 'una']);
 
 function normalize(str) {
   return str
@@ -311,8 +316,7 @@ tagCloud.addEventListener('click', (e) => {
 
 search.addEventListener('input', render);
 
-document.getElementById('share-search-btn').addEventListener('click', async (e) => {
-  const btn = e.currentTarget;
+async function copyShareLink(btn) {
   const url = new URL(location.origin + location.pathname);
   if (search.value.trim()) url.searchParams.set('q', search.value.trim());
   if (activeTag) url.searchParams.set('tag', activeTag);
@@ -327,6 +331,13 @@ document.getElementById('share-search-btn').addEventListener('click', async (e) 
   } catch (err) {
     prompt('Copia este mensaje:', message);
   }
+}
+
+document.getElementById('share-search-btn').addEventListener('click', (e) => copyShareLink(e.currentTarget));
+document.getElementById('share-view-btn').addEventListener('click', (e) => copyShareLink(e.currentTarget));
+
+document.getElementById('logo-btn').addEventListener('click', () => {
+  window.location.href = location.pathname;
 });
 
 const infoToggle = document.getElementById('info-toggle');
@@ -389,7 +400,7 @@ modalSaveBtn.addEventListener('click', async () => {
     if (newName !== photo.name) {
       await fetch(`/api/photos/${modalPhotoId}/name`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: adminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ name: newName }),
       });
     }
@@ -398,12 +409,15 @@ modalSaveBtn.addEventListener('click', async () => {
     for (const tag of toAdd) {
       await fetch(`/api/photos/${modalPhotoId}/tags`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: adminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ tag }),
       });
     }
     for (const tag of toRemove) {
-      await fetch(`/api/photos/${modalPhotoId}/tags/${encodeURIComponent(tag)}`, { method: 'DELETE' });
+      await fetch(`/api/photos/${modalPhotoId}/tags/${encodeURIComponent(tag)}`, {
+        method: 'DELETE',
+        headers: adminHeaders(),
+      });
     }
 
     photos = photos.map((p) =>

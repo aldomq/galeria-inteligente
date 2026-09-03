@@ -17,15 +17,12 @@
   </div>
 
   <header>
-    <div class="logo-badge"><img src="assets/logo.jpg" alt="FQ Monturas" /></div>
-    <h1 id="page-title">Galería Inteligente</h1>
+    <button type="button" id="logo-btn" class="logo-badge" title=""><img src="assets/logo.jpg" alt="FQ Monturas" /></button>
+    <h1 id="page-title">Catálogo</h1>
 
     <div id="shared-title-wrap" hidden>
       <h2 id="shared-title"></h2>
-      <div class="shared-links">
-        <button type="button" id="free-search-toggle" class="nav-link">Búsqueda libre →</button>
-        <a href="?view=1" id="full-catalog-link" class="nav-link">Ver catálogo completo →</a>
-      </div>
+      <a href="index.html" id="free-search-toggle" class="nav-link">Búsqueda libre →</a>
     </div>
 
     <div class="search-wrap">
@@ -35,7 +32,7 @@
       <input id="search" type="text" placeholder="Buscar (ej. montura negra con bordado)…" autocomplete="off" />
       <button type="button" id="share-search-btn" title="Copiar link de esta búsqueda">🔗</button>
     </div>
-    <a class="nav-link" href="etiquetas.html">Gestionar etiquetas →</a>
+    <a class="nav-link admin-only" href="etiquetas.html" id="manage-tags-link">Gestionar etiquetas →</a>
   </header>
 
   <div id="tag-cloud" class="tag-cloud"></div>
@@ -53,22 +50,23 @@
     <div class="modal">
       <button type="button" class="modal-close" data-action="close-modal">✕</button>
       <img id="modal-image" src="" alt="" onload="this.classList.add('loaded')" />
-      <input id="modal-name-input" type="text" placeholder="Nombre de la foto" />
+      <input id="modal-name-input" class="admin-only" type="text" placeholder="Nombre de la foto" />
       <div id="modal-tags" class="tags"></div>
-      <div id="modal-add-tag-row" class="add-tag">
+      <div id="modal-add-tag-row" class="add-tag admin-only">
         <select id="modal-tag-select"></select>
         <button type="button" id="modal-add-tag-btn">+</button>
       </div>
-      <button type="button" id="modal-save-btn" class="save-btn">Guardar cambios</button>
+      <button type="button" id="modal-save-btn" class="save-btn admin-only">Guardar cambios</button>
     </div>
   </div>
 
   <footer class="watermark">
     Hecho por Aldo Mora · <a href="mailto:aldoismaelmq@gmail.com">aldoismaelmq@gmail.com</a><br />
     © 2026 Aldo Mora. Todos los derechos reservados.
-    <a href="/admin/login.html" class="lock-link" title="Acceso administrador">🔒</a>
+    <button type="button" id="share-view-btn" class="lock-link" title="Copiar link de esta vista">🔗</button>
+    <a href="/admin/login.html?next=%2Findex.html" id="lock-link" class="lock-link" title="Acceso administrador">🔒</a>
   </footer>
 
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

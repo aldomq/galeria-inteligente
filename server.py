@@ -25,8 +25,11 @@ ADMIN_AUTH_PATH = ROOT / "admin_auth.json"
 # de nuevo a propósito, por seguridad.
 TOKEN_TTL_SECONDS = 5 * 60
 
-# Rutas que requieren el token de admin (login + reconexión de Drive).
+# Rutas que requieren el token de admin (login, reconexión de Drive, y
+# cualquier edición: tags, nombres, gestión de etiquetas).
 ADMIN_API_PATHS = {"/api/web-config", "/api/connect"}
+ADMIN_API_PREFIXES = ("/api/tags",)  # crear/borrar/color de tags
+ADMIN_PHOTO_WRITE_RE = re.compile(r"^/api/photos/([^/]+)/(name|tags)")  # editar foto
 
 PHOTO_IMAGE_RE = re.compile(r"^/api/photos/([^/]+)/image/?$")
 PHOTO_NAME_RE = re.compile(r"^/api/photos/([^/]+)/name/?$")
@@ -157,7 +160,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(401, {"error": "Usuario o contraseña incorrectos."})
             return
 
-        if self.path in ADMIN_API_PATHS and not self._require_admin_token():
+        needs_auth = (
+            self.path in ADMIN_API_PATHS
+            or self.path.startswith(ADMIN_API_PREFIXES)
+            or ADMIN_PHOTO_WRITE_RE.match(self.path)
+        )
+        if needs_auth and not self._require_admin_token():
             return
 
         if self.path == "/api/connect":
@@ -221,6 +229,10 @@ class Handler(BaseHTTPRequestHandler):
             self._json(500, {"error": str(err)})
 
     def do_DELETE(self):
+        needs_auth = self.path.startswith(ADMIN_API_PREFIXES) or ADMIN_PHOTO_WRITE_RE.match(self.path)
+        if needs_auth and not self._require_admin_token():
+            return
+
         tag_match = TAG_RE.match(self.path)
         if tag_match:
             self._json(200, tags_store.remove_tag(unquote(tag_match.group(1))))

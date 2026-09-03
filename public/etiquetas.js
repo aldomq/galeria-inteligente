@@ -1,8 +1,22 @@
+const adminToken = new URLSearchParams(location.search).get('t') || '';
+const isAdmin = !!adminToken;
+
+function adminHeaders(extra) {
+  return Object.assign({ 'X-Admin-Token': adminToken }, extra || {});
+}
+
 let masterTags = [];
 
 const tagManagerList = document.getElementById('tag-manager-list');
 const newTagForm = document.getElementById('new-tag-form');
 const newTagInput = document.getElementById('new-tag-input');
+const tagManagerSection = document.getElementById('tag-manager-section');
+const loginRequired = document.getElementById('login-required');
+
+if (!isAdmin) {
+  tagManagerSection.hidden = true;
+  loginRequired.hidden = false;
+}
 
 async function loadTags() {
   const res = await fetch('/api/tags');
@@ -32,7 +46,7 @@ newTagForm.addEventListener('submit', async (e) => {
   if (!name) return;
   const res = await fetch('/api/tags', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: adminHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ name }),
   });
   masterTags = await res.json();
@@ -45,6 +59,7 @@ tagManagerList.addEventListener('click', async (e) => {
   if (!btn) return;
   const res = await fetch(`/api/tags/${encodeURIComponent(btn.dataset.tag)}`, {
     method: 'DELETE',
+    headers: adminHeaders(),
   });
   masterTags = await res.json();
   render();
@@ -55,7 +70,7 @@ tagManagerList.addEventListener('change', async (e) => {
   if (!input) return;
   const res = await fetch(`/api/tags/${encodeURIComponent(input.dataset.tag)}/color`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: adminHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ color: input.value }),
   });
   masterTags = await res.json();

@@ -12,7 +12,12 @@
     <a class="nav-link" href="index.html">← Volver a la galería</a>
   </header>
 
-  <section class="tag-manager">
+  <p id="login-required" class="muted" style="text-align:center" hidden>
+    Necesitas iniciar sesión para gestionar etiquetas.
+    <a href="/admin/login.html?next=%2Fetiquetas.html">Iniciar sesión →</a>
+  </p>
+
+  <section class="tag-manager" id="tag-manager-section">
     <form id="new-tag-form">
       <input id="new-tag-input" type="text" placeholder="Nueva etiqueta…" autocomplete="off" />
       <button type="submit">Crear etiqueta</button>

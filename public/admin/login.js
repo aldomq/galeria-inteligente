@@ -20,7 +20,9 @@ form.addEventListener('submit', async (e) => {
 
     if (res.ok) {
       const { token } = await res.json();
-      window.location.href = 'connect.html?t=' + encodeURIComponent(token);
+      const next = new URLSearchParams(location.search).get('next') || '../index.html';
+      const sep = next.includes('?') ? '&' : '?';
+      window.location.href = next + sep + 't=' + encodeURIComponent(token);
     } else {
       errorEl.hidden = false;
       submitBtn.disabled = false;
