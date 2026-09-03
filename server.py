@@ -2,6 +2,8 @@
 """Servidor del prototipo: sirve el frontend estático y una API mínima
 para leer/editar tags, respaldada por Google Drive (ver drive_store.py).
 """
+import base64
+import hmac
 import json
 import os
 import re
@@ -15,6 +17,15 @@ import tags_store
 
 ROOT = Path(__file__).parent
 PUBLIC_DIR = ROOT / "public"
+ADMIN_AUTH_PATH = ROOT / "admin_auth.json"
+
+# Rutas que requieren usuario/contraseña (la reconexión de Drive).
+ADMIN_PATHS = {"/api/web-config", "/api/connect"}
+
+
+def _is_admin_path(path):
+    clean = urlsplit(path).path
+    return clean.startswith("/admin/") or clean in ADMIN_PATHS
 
 PHOTO_IMAGE_RE = re.compile(r"^/api/photos/([^/]+)/image/?$")
 PHOTO_NAME_RE = re.compile(r"^/api/photos/([^/]+)/name/?$")
@@ -52,6 +63,31 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
+    def _require_admin_auth(self):
+        """HTTP Basic Auth real (verificada en el servidor, nunca en el
+        cliente) para /admin/* y las rutas que reconectan Drive."""
+        creds = json.loads(ADMIN_AUTH_PATH.read_text())
+        header = self.headers.get("Authorization", "")
+        ok = False
+        if header.startswith("Basic "):
+            try:
+                decoded = base64.b64decode(header[6:]).decode("utf-8")
+                user, _, pwd = decoded.partition(":")
+                ok = hmac.compare_digest(user, creds["username"]) and hmac.compare_digest(
+                    pwd, creds["password"]
+                )
+            except Exception:
+                ok = False
+        if not ok:
+            body = b"Autenticacion requerida"
+            self.send_response(401)
+            self.send_header("WWW-Authenticate", 'Basic realm="Galeria Inteligente admin"')
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        return ok
+
     def _static(self, path):
         rel = urlsplit(path).path.lstrip("/") or "index.html"
         file_path = (PUBLIC_DIR / rel).resolve()
@@ -70,6 +106,9 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(content)
 
     def do_GET(self):
+        if _is_admin_path(self.path) and not self._require_admin_auth():
+            return
+
         if self.path == "/api/photos":
             try:
                 self._json(200, drive_store.get_photos())
@@ -98,6 +137,9 @@ class Handler(BaseHTTPRequestHandler):
         self._static(self.path)
 
     def do_POST(self):
+        if _is_admin_path(self.path) and not self._require_admin_auth():
+            return
+
         if self.path == "/api/connect":
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length) or b"{}")

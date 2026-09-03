@@ -51,10 +51,14 @@ h1 {
   letter-spacing: -0.02em;
 }
 
-.info-icon {
+.info-wrap {
   position: fixed;
   top: 16px;
   right: 16px;
+  z-index: 10;
+}
+
+.info-icon {
   width: 26px;
   height: 26px;
   border-radius: 50%;
@@ -67,10 +71,9 @@ h1 {
   font-size: 0.8rem;
   font-style: italic;
   font-weight: bold;
-  text-decoration: none;
   font-family: Georgia, serif;
   opacity: 0.7;
-  z-index: 10;
+  cursor: pointer;
   transition: opacity 0.15s, border-color 0.15s, color 0.15s;
 }
 
@@ -78,6 +81,56 @@ h1 {
   opacity: 1;
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.info-popover {
+  position: absolute;
+  top: 34px;
+  right: 0;
+  width: 260px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.info-popover[hidden] {
+  display: none;
+}
+
+.info-title {
+  margin: 0 0 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.info-item {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.info-item code {
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 0.8rem;
+}
+
+.lock-link {
+  margin-left: 8px;
+  text-decoration: none;
+  opacity: 0.5;
+  filter: grayscale(1);
+  transition: opacity 0.15s, filter 0.15s;
+}
+
+.lock-link:hover {
+  opacity: 1;
+  filter: grayscale(0);
 }
 
 .nav-link {
@@ -540,8 +593,13 @@ h1 {
   text-align: center;
   color: var(--muted);
   font-size: 0.78rem;
-  padding: 8px 0 28px;
-  opacity: 0.6;
+  line-height: 1.6;
+  padding: 20px 16px 28px;
+  opacity: 0.7;
+}
+
+.watermark a {
+  color: inherit;
 }
 
 .empty {

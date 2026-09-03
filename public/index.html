@@ -8,7 +8,13 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <a class="info-icon" href="connect.html" title="Reconectar carpeta de Drive">i</a>
+  <div class="info-wrap">
+    <button type="button" class="info-icon" id="info-toggle" title="Comandos de búsqueda">i</button>
+    <div class="info-popover" id="info-popover" hidden>
+      <p class="info-title">Comandos de búsqueda</p>
+      <p class="info-item"><code>#pendientes</code> — fotos sin etiquetas o sin nombre propio</p>
+    </div>
+  </div>
 
   <header>
     <h1>Galería Inteligente</h1>
@@ -41,7 +47,11 @@
     </div>
   </div>
 
-  <footer class="watermark">Hecho por Aldo Mora</footer>
+  <footer class="watermark">
+    Hecho por Aldo Mora · <a href="mailto:aldoismaelmq@gmail.com">aldoismaelmq@gmail.com</a><br />
+    © 2026 Aldo Mora. Todos los derechos reservados.
+    <a href="/admin/connect.html" class="lock-link" title="Acceso administrador">🔒</a>
+  </footer>
 
   <script src="app.js?v=2"></script>
 </body>

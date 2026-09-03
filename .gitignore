@@ -6,3 +6,4 @@ __pycache__/
 credentials.json
 token.json
 web_client.json
+admin_auth.json

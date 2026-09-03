@@ -78,10 +78,13 @@ function tokenMatchesTag(token, tag) {
   return levenshtein(token, normTag) <= 1;
 }
 
-function matchesQuery(photo, tokens) {
-  if (activeTag && !photo.tags.includes(activeTag)) return false;
-  if (!tokens.length) return true;
-  return tokens.every((token) => photo.tags.some((t) => tokenMatchesTag(token, t)));
+// Cuántos tokens de la búsqueda coinciden con alguna tag de la foto.
+// No exige que coincidan todos — una foto con más coincidencias sale
+// primero, pero una con solo alguna palabra parecida igual aparece.
+function matchScore(photo, tokens) {
+  if (activeTag && !photo.tags.includes(activeTag)) return -1;
+  if (!tokens.length) return 0;
+  return tokens.filter((token) => photo.tags.some((t) => tokenMatchesTag(token, t))).length;
 }
 
 function isPending(photo) {
@@ -102,9 +105,17 @@ function render() {
     )
     .join('');
 
-  const visible = isPendingCommand
-    ? photos.filter(isPending)
-    : photos.filter((p) => matchesQuery(p, tokenize(search.value)));
+  let visible;
+  if (isPendingCommand) {
+    visible = photos.filter(isPending);
+  } else {
+    const tokens = tokenize(search.value);
+    visible = photos
+      .map((p) => ({ photo: p, score: matchScore(p, tokens) }))
+      .filter((r) => r.score >= 0 && (!tokens.length || r.score > 0))
+      .sort((a, b) => b.score - a.score)
+      .map((r) => r.photo);
+  }
 
   gallery.innerHTML = visible.length
     ? visible.map(cardHtml).join('')
@@ -210,6 +221,18 @@ tagCloud.addEventListener('click', (e) => {
 });
 
 search.addEventListener('input', render);
+
+const infoToggle = document.getElementById('info-toggle');
+const infoPopover = document.getElementById('info-popover');
+if (infoToggle) {
+  infoToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    infoPopover.hidden = !infoPopover.hidden;
+  });
+  document.addEventListener('click', (e) => {
+    if (!infoPopover.hidden && !infoPopover.contains(e.target)) infoPopover.hidden = true;
+  });
+}
 
 gallery.addEventListener('click', async (e) => {
   const img = e.target.closest('img[data-action="open-modal"]');
