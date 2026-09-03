@@ -181,10 +181,15 @@ function tagChipsHtml(tags) {
 }
 
 function cardHtml(photo) {
+  const isShared = document.body.classList.contains('shared-view');
+  const hasCustomName = photo.name !== photo.filename;
+  const nameHtml =
+    isShared && !hasCustomName ? '' : `<p class="photo-name" title="${photo.name}">${photo.name}</p>`;
+
   return `
     <div class="card">
-      <p class="photo-name" title="${photo.name}">${photo.name}</p>
-      <img src="/api/photos/${photo.id}/image" alt="${photo.name}" loading="lazy" data-action="open-modal" data-id="${photo.id}" />
+      ${nameHtml}
+      <img src="/api/photos/${photo.id}/image" alt="${photo.name}" loading="lazy" data-action="open-modal" data-id="${photo.id}" onload="this.classList.add('loaded')" />
       <div class="card-body">
         <div class="tags">${tagChipsHtml(photo.tags)}</div>
         <button class="share-btn" data-action="share" data-id="${photo.id}" data-filename="${photo.filename}">
@@ -215,6 +220,7 @@ function renderModal() {
   const photo = photos.find((p) => p.id === modalPhotoId);
   if (!photo) return closeModal();
 
+  modalImage.classList.remove('loaded');
   modalImage.src = `/api/photos/${photo.id}/image`;
   modalImage.alt = modalDraft.name;
   modalNameInput.value = modalDraft.name;

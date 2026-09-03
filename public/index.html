@@ -43,7 +43,7 @@
   <div id="photo-modal" class="modal-overlay" hidden>
     <div class="modal">
       <button type="button" class="modal-close" data-action="close-modal">✕</button>
-      <img id="modal-image" src="" alt="" />
+      <img id="modal-image" src="" alt="" onload="this.classList.add('loaded')" />
       <input id="modal-name-input" type="text" placeholder="Nombre de la foto" />
       <div id="modal-tags" class="tags"></div>
       <div id="modal-add-tag-row" class="add-tag">
