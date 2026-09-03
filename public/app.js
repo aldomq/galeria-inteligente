@@ -184,7 +184,10 @@ function render() {
   const isPendingCommand = query === '#pendientes';
   const tags = allTagNames();
 
-  if (activeTag && !tags.includes(activeTag)) activeTag = null;
+  // Solo limpiamos el filtro si ya cargaron las fotos y de verdad no
+  // existe esa etiqueta — si "tags" está vacío porque las fotos todavía
+  // no llegan (carrera con la carga de /api/tags), no lo tocamos.
+  if (activeTag && photos.length && !tags.includes(activeTag)) activeTag = null;
 
   tagCloud.innerHTML = tags
     .map(
