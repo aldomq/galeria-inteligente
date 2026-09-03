@@ -115,10 +115,6 @@ h1 {
 }
 
 #free-search-toggle {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
   cursor: pointer;
 }
 
@@ -215,15 +211,24 @@ body.admin-mode .info-wrap {
 }
 
 .nav-link {
-  color: var(--accent);
+  display: inline-block;
+  background: var(--accent);
+  color: white;
   text-decoration: none;
-  font-size: 0.88rem;
-  font-weight: 600;
-  transition: opacity 0.15s;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: filter 0.15s, transform 0.1s;
 }
 
 .nav-link:hover {
-  opacity: 0.75;
+  filter: brightness(1.1);
+}
+
+.nav-link:active {
+  transform: scale(0.97);
 }
 
 .search-wrap {
