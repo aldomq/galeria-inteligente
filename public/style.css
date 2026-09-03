@@ -105,8 +105,8 @@ h1 {
 }
 
 .info-icon {
-  width: 26px;
-  height: 26px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--card);
@@ -167,7 +167,12 @@ h1 {
 }
 
 .lock-link {
-  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-left: 4px;
   text-decoration: none;
   opacity: 0.5;
   filter: grayscale(1);
@@ -224,11 +229,11 @@ h1 {
 
 #share-search-btn {
   position: absolute;
-  right: 6px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   border: none;
   background: transparent;
@@ -260,7 +265,7 @@ h1 {
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 #new-tag-input:focus {
@@ -359,12 +364,28 @@ h1 {
 .add-tag select {
   flex: 1;
   min-width: 0;
-  padding: 8px 10px;
+  padding: 10px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 1rem;
+}
+
+.add-tag button {
+  width: 42px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.add-tag button:hover {
+  filter: brightness(1.08);
 }
 
 .tag-cloud {
@@ -529,7 +550,7 @@ h1 {
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: 1rem;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -592,7 +613,8 @@ h1 {
 }
 
 .share-btn {
-  padding: 10px 12px;
+  width: 100%;
+  padding: 12px;
   border-radius: 999px;
   border: none;
   background: #25d366;
@@ -660,8 +682,8 @@ h1 {
   color: white;
   border: none;
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   cursor: pointer;
   font-size: 0.9rem;
   z-index: 1;
@@ -753,4 +775,30 @@ body.shared-view #modal-tags button {
   text-align: center;
   color: var(--muted);
   padding: 60px 20px;
+}
+
+/* Celular: menos aire a los lados para aprovechar el ancho, y menos
+   padding arriba del header (la mayoría de las visitas van a ser
+   desde el teléfono). */
+@media (max-width: 480px) {
+  header {
+    padding: 28px 16px 16px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .tag-cloud {
+    padding: 4px 16px 20px;
+  }
+
+  .gallery {
+    padding: 0 16px 48px;
+    gap: 16px;
+  }
+
+  .tag-manager {
+    padding: 8px 16px 20px;
+  }
 }
