@@ -50,30 +50,34 @@ freeSearchToggle.addEventListener('click', () => {
   search.focus();
 });
 
+// La barra muestra cuántas fotos ya cargaron, pero SIN bloquear la
+// galería — con muchas fotos y un servidor que atiende de a una,
+// esperar a que todas terminen podía sentirse "trabado". La grilla
+// se muestra de una vez y cada foto aparece cuando esté lista.
+function trackLoadingProgress(list) {
+  const wrap = document.getElementById('loading-indicator');
+  if (!list.length || !wrap) {
+    if (wrap) wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+  let done = 0;
+  const finish = () => {
+    done += 1;
+    setLoadingProgress(done, list.length);
+    if (done >= list.length) wrap.hidden = true;
+  };
+  list.forEach((p) => {
+    const img = new Image();
+    img.onload = finish;
+    img.onerror = finish;
+    img.src = `/api/photos/${p.id}/image`;
+  });
+}
+
 function setLoadingProgress(done, total) {
   const bar = document.getElementById('loading-bar-fill');
   if (bar) bar.style.width = total ? `${(done / total) * 100}%` : '0%';
-}
-
-function preloadImages(list) {
-  if (!list.length) return Promise.resolve();
-  let done = 0;
-  return Promise.all(
-    list.map(
-      (p) =>
-        new Promise((resolve) => {
-          const img = new Image();
-          const finish = () => {
-            done += 1;
-            setLoadingProgress(done, list.length);
-            resolve();
-          };
-          img.onload = finish;
-          img.onerror = finish;
-          img.src = `/api/photos/${p.id}/image`;
-        })
-    )
-  );
 }
 
 async function loadPhotos() {
@@ -83,8 +87,8 @@ async function loadPhotos() {
     return;
   }
   photos = await res.json();
-  await preloadImages(photos);
   render();
+  trackLoadingProgress(photos);
 }
 
 async function loadTags() {

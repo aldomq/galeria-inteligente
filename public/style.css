@@ -462,10 +462,21 @@ h1 {
   padding: 60px 0;
 }
 
+.loading-indicator {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+  padding: 0 24px 18px;
+}
+
+.loading-indicator p {
+  margin: 0 0 8px;
+}
+
 .loading-bar {
   width: min(240px, 60vw);
   height: 6px;
-  margin: 14px auto 0;
+  margin: 0 auto;
   border-radius: 999px;
   background: var(--border);
   overflow: hidden;
@@ -502,13 +513,20 @@ h1 {
   object-fit: cover;
   display: block;
   cursor: pointer;
-  background: var(--card);
-  opacity: 0;
-  transition: opacity 0.35s ease, filter 0.15s;
+  background: linear-gradient(100deg, var(--card) 40%, var(--border) 50%, var(--card) 60%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  transition: filter 0.15s;
 }
 
 .card img.loaded {
-  opacity: 1;
+  animation: none;
+  background: none;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
 }
 
 .card img:hover {
