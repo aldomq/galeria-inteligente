@@ -4,6 +4,17 @@ let activeTag = null;
 let modalPhotoId = null;
 let modalDraft = null; // { name, tags } — cambios locales sin guardar todavía
 
+// Si el link trae ?q= o ?tag=, es una búsqueda compartida: se precarga
+// el filtro y se oculta todo lo de edición/admin (vista solo para ver).
+(function applySharedFilterFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const q = params.get('q');
+  const tag = params.get('tag');
+  if (q !== null) document.getElementById('search').value = q;
+  if (tag) activeTag = tag;
+  if (q !== null || tag) document.body.classList.add('shared-view');
+})();
+
 const gallery = document.getElementById('gallery');
 const tagCloud = document.getElementById('tag-cloud');
 const search = document.getElementById('search');
@@ -221,6 +232,28 @@ tagCloud.addEventListener('click', (e) => {
 });
 
 search.addEventListener('input', render);
+
+document.getElementById('share-search-btn').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const url = new URL(location.origin + location.pathname);
+  if (search.value.trim()) url.searchParams.set('q', search.value.trim());
+  if (activeTag) url.searchParams.set('tag', activeTag);
+
+  const filters = [...tokenize(search.value)];
+  if (activeTag && !filters.includes(activeTag)) filters.push(activeTag);
+  const filtersLabel = filters.length ? filters.join(', ') : 'todas las fotos';
+
+  const message = `Resultado de: ${filtersLabel}\nVer resultados en: ${url.toString()}`;
+
+  try {
+    await navigator.clipboard.writeText(message);
+    const original = btn.textContent;
+    btn.textContent = '✅';
+    setTimeout(() => (btn.textContent = original), 1500);
+  } catch (err) {
+    prompt('Copia este mensaje:', message);
+  }
+});
 
 const infoToggle = document.getElementById('info-toggle');
 const infoPopover = document.getElementById('info-popover');

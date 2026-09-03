@@ -172,7 +172,7 @@ h1 {
 
 #search {
   width: 100%;
-  padding: 12px 16px 12px 44px;
+  padding: 12px 44px 12px 44px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--card);
@@ -185,6 +185,25 @@ h1 {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+#share-search-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#share-search-btn:hover {
+  background: var(--accent-soft);
 }
 
 .tag-manager {
@@ -680,6 +699,18 @@ h1 {
 
 .watermark a {
   color: inherit;
+}
+
+/* Vista de link compartido: solo se ven los resultados, nada de
+   edición ni accesos de administración. */
+body.shared-view .nav-link,
+body.shared-view .info-wrap,
+body.shared-view .lock-link,
+body.shared-view #modal-name-input,
+body.shared-view #modal-add-tag-row,
+body.shared-view #modal-save-btn,
+body.shared-view #modal-tags button {
+  display: none;
 }
 
 .empty {
