@@ -88,22 +88,6 @@ h1 {
   transition: opacity 0.15s;
 }
 
-.pending-btn {
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-}
-
-.pending-btn:hover {
-  border-color: var(--accent);
-}
-
 .nav-link:hover {
   opacity: 0.75;
 }

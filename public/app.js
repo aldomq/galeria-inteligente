@@ -211,11 +211,6 @@ tagCloud.addEventListener('click', (e) => {
 
 search.addEventListener('input', render);
 
-document.getElementById('pending-filter-btn').addEventListener('click', () => {
-  search.value = search.value.trim().toLowerCase() === '#pendientes' ? '' : '#pendientes';
-  render();
-});
-
 gallery.addEventListener('click', async (e) => {
   const img = e.target.closest('img[data-action="open-modal"]');
   if (img) {
