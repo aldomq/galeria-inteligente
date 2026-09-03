@@ -38,13 +38,22 @@ body {
 
 /* Fondo de caballos: se queda fijo mientras se hace scroll, así el
    paisaje se va revelando hacia arriba y los caballos quedan abajo.
-   En iPhone (Safari) los navegadores ignoran background-attachment:
-   fixed, así que ahí se ve como fondo normal, sin el efecto. */
+   min-height + flex empujan el pie de página abajo del todo y evitan
+   que el fondo se vea "apachurrado" cuando hay poco contenido (ej.
+   la galería todavía vacía). En iPhone (Safari) los navegadores
+   ignoran background-attachment: fixed, ahí se ve como fondo normal. */
 body.has-bg {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background:
     linear-gradient(rgba(13, 13, 16, 0.35), rgba(13, 13, 16, 0.7)),
     url("assets/fondo.webp") bottom center / cover fixed no-repeat;
   background-color: var(--bg);
+}
+
+body.has-bg .watermark {
+  margin-top: auto;
 }
 
 header {
