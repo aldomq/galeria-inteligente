@@ -23,12 +23,15 @@ TOKEN_PATH = ROOT / "token.json"
 SCOPES = drive_connect.SCOPES
 
 _service = None
+_image_cache = {}  # file_id -> (bytes, mime) — evita volver a pedirle la
+                    # misma foto a Drive en cada vista.
 
 
 def reset():
     """Fuerza reconstruir el cliente de Drive (tras reconectar en /connect.html)."""
     global _service
     _service = None
+    _image_cache.clear()
 
 
 def _folder_id():
@@ -107,6 +110,9 @@ def set_name(photo_id, name):
 
 
 def get_image(file_id):
+    if file_id in _image_cache:
+        return _image_cache[file_id]
+
     service = _get_service()
     meta = service.files().get(fileId=file_id, fields="mimeType, name").execute()
     request = service.files().get_media(fileId=file_id)
@@ -116,7 +122,9 @@ def get_image(file_id):
     while not done:
         _, done = downloader.next_chunk()
     mime = meta.get("mimeType") or mimetypes.guess_type(meta.get("name", ""))[0] or "application/octet-stream"
-    return buf.getvalue(), mime
+    result = (buf.getvalue(), mime)
+    _image_cache[file_id] = result
+    return result
 
 
 def _update_tags(photo_id, tags):
