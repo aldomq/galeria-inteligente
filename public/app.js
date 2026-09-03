@@ -11,7 +11,7 @@ let modalDraft = null; // { name, tags } — cambios locales sin guardar todaví
   const q = params.get('q');
   const tag = params.get('tag');
   if (q !== null) document.getElementById('search').value = q;
-  if (tag) activeTag = tag;
+  if (tag) activeTag = tag.toLowerCase();
   if (q !== null || tag) document.body.classList.add('shared-view');
 })();
 
@@ -25,6 +25,26 @@ const modalTags = document.getElementById('modal-tags');
 const modalTagSelect = document.getElementById('modal-tag-select');
 const modalAddTagBtn = document.getElementById('modal-add-tag-btn');
 const modalSaveBtn = document.getElementById('modal-save-btn');
+const searchWrap = document.querySelector('.search-wrap');
+const sharedTitleWrap = document.getElementById('shared-title-wrap');
+const sharedTitle = document.getElementById('shared-title');
+const freeSearchToggle = document.getElementById('free-search-toggle');
+
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+if (document.body.classList.contains('shared-view')) {
+  sharedTitle.textContent = capitalize(describeFilters(currentFilters()));
+  sharedTitleWrap.hidden = false;
+  searchWrap.hidden = true;
+}
+
+freeSearchToggle.addEventListener('click', () => {
+  sharedTitleWrap.hidden = true;
+  searchWrap.hidden = false;
+  search.focus();
+});
 
 async function loadPhotos() {
   const res = await fetch('/api/photos');
@@ -100,6 +120,23 @@ function matchScore(photo, tokens) {
 
 function isPending(photo) {
   return photo.tags.length === 0 || photo.name === photo.filename;
+}
+
+// Une una lista de palabras en una frase en español ("a, b y c").
+function joinSpanish(words) {
+  if (!words.length) return '';
+  if (words.length === 1) return words[0];
+  return words.slice(0, -1).join(', ') + ' y ' + words[words.length - 1];
+}
+
+function currentFilters() {
+  const filters = [...tokenize(search.value)];
+  if (activeTag && !filters.includes(activeTag)) filters.push(activeTag);
+  return filters;
+}
+
+function describeFilters(filters) {
+  return filters.length ? joinSpanish(filters) : 'todas las fotos';
 }
 
 function render() {
@@ -239,11 +276,7 @@ document.getElementById('share-search-btn').addEventListener('click', async (e) 
   if (search.value.trim()) url.searchParams.set('q', search.value.trim());
   if (activeTag) url.searchParams.set('tag', activeTag);
 
-  const filters = [...tokenize(search.value)];
-  if (activeTag && !filters.includes(activeTag)) filters.push(activeTag);
-  const filtersLabel = filters.length ? filters.join(', ') : 'todas las fotos';
-
-  const message = `Resultado de: ${filtersLabel}\nVer resultados en: ${url.toString()}`;
+  const message = `Resultados de ${describeFilters(currentFilters())}.\nVer resultados en: ${url.toString()}`;
 
   try {
     await navigator.clipboard.writeText(message);
