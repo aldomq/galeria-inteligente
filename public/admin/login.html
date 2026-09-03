@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acceso admin — Galería Inteligente</title>
+  <link rel="stylesheet" href="../style.css" />
+</head>
+<body>
+  <div class="login-box">
+    <div class="login-lock">🔒</div>
+    <h1 class="login-title">Acceso administrador</h1>
+    <p class="muted">Solo para reconectar la carpeta de Drive.</p>
+    <form id="login-form">
+      <input id="login-user" type="text" placeholder="Usuario" autocomplete="username" required />
+      <input id="login-pass" type="password" placeholder="Contraseña" autocomplete="current-password" required />
+      <button type="submit">Entrar</button>
+    </form>
+    <p id="login-error" class="login-error" hidden>Usuario o contraseña incorrectos.</p>
+  </div>
+
+  <script src="login.js"></script>
+</body>
+</html>

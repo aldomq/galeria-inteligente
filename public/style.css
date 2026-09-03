@@ -428,6 +428,75 @@ h1 {
   opacity: 1;
 }
 
+.login-box {
+  max-width: 360px;
+  margin: 100px auto;
+  padding: 32px 28px;
+  border-radius: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-lock {
+  font-size: 2rem;
+  margin-bottom: 4px;
+}
+
+.login-title {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+}
+
+#login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+#login-form input {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+#login-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+#login-form button {
+  padding: 12px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: filter 0.15s;
+}
+
+#login-form button:hover {
+  filter: brightness(1.08);
+}
+
+.login-error {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
+}
+
 .connect-box {
   max-width: 480px;
   margin: 60px auto;

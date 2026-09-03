@@ -2,11 +2,12 @@
 """Servidor del prototipo: sirve el frontend estático y una API mínima
 para leer/editar tags, respaldada por Google Drive (ver drive_store.py).
 """
-import base64
+import hashlib
 import hmac
 import json
 import os
 import re
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -19,13 +20,13 @@ ROOT = Path(__file__).parent
 PUBLIC_DIR = ROOT / "public"
 ADMIN_AUTH_PATH = ROOT / "admin_auth.json"
 
-# Rutas que requieren usuario/contraseña (la reconexión de Drive).
-ADMIN_PATHS = {"/api/web-config", "/api/connect"}
+# El token de admin dura poco y no se guarda en ningún lado (ni cookie ni
+# localStorage) — cada vez que se entra por el candado hay que loguearse
+# de nuevo a propósito, por seguridad.
+TOKEN_TTL_SECONDS = 5 * 60
 
-
-def _is_admin_path(path):
-    clean = urlsplit(path).path
-    return clean.startswith("/admin/") or clean in ADMIN_PATHS
+# Rutas que requieren el token de admin (login + reconexión de Drive).
+ADMIN_API_PATHS = {"/api/web-config", "/api/connect"}
 
 PHOTO_IMAGE_RE = re.compile(r"^/api/photos/([^/]+)/image/?$")
 PHOTO_NAME_RE = re.compile(r"^/api/photos/([^/]+)/name/?$")
@@ -41,6 +42,28 @@ MIME_TYPES = {
     ".svg": "image/svg+xml",
     ".json": "application/json; charset=utf-8",
 }
+
+
+def _admin_creds():
+    return json.loads(ADMIN_AUTH_PATH.read_text())
+
+
+def _make_token():
+    secret = _admin_creds()["session_secret"]
+    expiry = int(time.time()) + TOKEN_TTL_SECONDS
+    sig = hmac.new(secret.encode(), str(expiry).encode(), hashlib.sha256).hexdigest()
+    return f"{expiry}.{sig}"
+
+
+def _valid_token(token):
+    if not token or "." not in token:
+        return False
+    expiry, _, sig = token.partition(".")
+    if not expiry.isdigit() or int(expiry) < time.time():
+        return False
+    secret = _admin_creds()["session_secret"]
+    expected = hmac.new(secret.encode(), expiry.encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(sig, expected)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -63,30 +86,11 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
-    def _require_admin_auth(self):
-        """HTTP Basic Auth real (verificada en el servidor, nunca en el
-        cliente) para /admin/* y las rutas que reconectan Drive."""
-        creds = json.loads(ADMIN_AUTH_PATH.read_text())
-        header = self.headers.get("Authorization", "")
-        ok = False
-        if header.startswith("Basic "):
-            try:
-                decoded = base64.b64decode(header[6:]).decode("utf-8")
-                user, _, pwd = decoded.partition(":")
-                ok = hmac.compare_digest(user, creds["username"]) and hmac.compare_digest(
-                    pwd, creds["password"]
-                )
-            except Exception:
-                ok = False
-        if not ok:
-            body = b"Autenticacion requerida"
-            self.send_response(401)
-            self.send_header("WWW-Authenticate", 'Basic realm="Galeria Inteligente admin"')
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-        return ok
+    def _require_admin_token(self):
+        if _valid_token(self.headers.get("X-Admin-Token", "")):
+            return True
+        self._json(401, {"error": "Sesión de administrador requerida o vencida."})
+        return False
 
     def _static(self, path):
         rel = urlsplit(path).path.lstrip("/") or "index.html"
@@ -106,9 +110,6 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(content)
 
     def do_GET(self):
-        if _is_admin_path(self.path) and not self._require_admin_auth():
-            return
-
         if self.path == "/api/photos":
             try:
                 self._json(200, drive_store.get_photos())
@@ -121,6 +122,8 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if self.path == "/api/web-config":
+            if not self._require_admin_token():
+                return
             web = json.loads((ROOT / "web_client.json").read_text())
             self._json(200, {"apiKey": web["api_key"], "clientId": web["client_id"]})
             return
@@ -137,7 +140,20 @@ class Handler(BaseHTTPRequestHandler):
         self._static(self.path)
 
     def do_POST(self):
-        if _is_admin_path(self.path) and not self._require_admin_auth():
+        if self.path == "/api/admin-login":
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length) or b"{}")
+            creds = _admin_creds()
+            ok = hmac.compare_digest(
+                body.get("username") or "", creds["username"]
+            ) and hmac.compare_digest(body.get("password") or "", creds["password"])
+            if ok:
+                self._json(200, {"ok": True, "token": _make_token()})
+            else:
+                self._json(401, {"error": "Usuario o contraseña incorrectos."})
+            return
+
+        if self.path in ADMIN_API_PATHS and not self._require_admin_token():
             return
 
         if self.path == "/api/connect":

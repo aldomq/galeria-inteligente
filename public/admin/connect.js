@@ -3,6 +3,8 @@ let clientId = '';
 let accessToken = '';
 let pickerLoaded = false;
 
+const adminToken = new URLSearchParams(location.search).get('t') || '';
+
 const statusEl = document.getElementById('status');
 const btn = document.getElementById('connect-btn');
 
@@ -10,8 +12,18 @@ function setStatus(text) {
   statusEl.textContent = text;
 }
 
+if (!adminToken) {
+  setStatus('Sesión no válida. Entra de nuevo desde el candado.');
+  btn.hidden = true;
+}
+
 async function loadConfig() {
-  const res = await fetch('/api/web-config');
+  const res = await fetch('/api/web-config', { headers: { 'X-Admin-Token': adminToken } });
+  if (!res.ok) {
+    setStatus('Sesión vencida. Entra de nuevo desde el candado.');
+    btn.hidden = true;
+    return;
+  }
   const config = await res.json();
   apiKey = config.apiKey;
   clientId = config.clientId;
@@ -67,7 +79,7 @@ function requestPermanentAccess(folderId, folderName) {
       }
       const res = await fetch('/api/connect', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
         body: JSON.stringify({ code: resp.code, folder_id: folderId, folder_name: folderName }),
       });
       if (res.ok) {
