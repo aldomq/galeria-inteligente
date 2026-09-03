@@ -80,6 +80,22 @@ h1 {
   letter-spacing: -0.02em;
 }
 
+.logo-badge {
+  width: 76px;
+  height: 76px;
+  border-radius: 18px;
+  background: white;
+  padding: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.logo-badge img {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  object-fit: contain;
+}
+
 #shared-title-wrap {
   display: flex;
   flex-direction: column;
@@ -446,6 +462,23 @@ h1 {
   padding: 60px 0;
 }
 
+.loading-bar {
+  width: min(240px, 60vw);
+  height: 6px;
+  margin: 14px auto 0;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+#loading-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -509,11 +542,15 @@ h1 {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
+  max-width: 100%;
+  padding: 3px 9px;
   border-radius: 999px;
   color: white;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tag button {
@@ -777,14 +814,22 @@ h1 {
 
 /* Vista de link compartido: solo se ven los resultados, nada de
    edición ni accesos de administración. */
-body.shared-view .nav-link,
+body.shared-view header > .nav-link,
 body.shared-view .info-wrap,
 body.shared-view .lock-link,
+body.shared-view #tag-cloud,
 body.shared-view #modal-name-input,
 body.shared-view #modal-add-tag-row,
 body.shared-view #modal-save-btn,
 body.shared-view #modal-tags button {
   display: none;
+}
+
+.shared-links {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .empty {

@@ -42,6 +42,9 @@ MIME_TYPES = {
     ".svg": "image/svg+xml",
     ".json": "application/json; charset=utf-8",
     ".webp": "image/webp",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
 }
 
 

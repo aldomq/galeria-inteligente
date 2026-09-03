@@ -12,7 +12,7 @@ let modalDraft = null; // { name, tags } — cambios locales sin guardar todaví
   const tag = params.get('tag');
   if (q !== null) document.getElementById('search').value = q;
   if (tag) activeTag = tag.toLowerCase();
-  if (q !== null || tag) document.body.classList.add('shared-view');
+  if (q !== null || tag || params.has('view')) document.body.classList.add('shared-view');
 })();
 
 const gallery = document.getElementById('gallery');
@@ -29,15 +29,19 @@ const searchWrap = document.querySelector('.search-wrap');
 const sharedTitleWrap = document.getElementById('shared-title-wrap');
 const sharedTitle = document.getElementById('shared-title');
 const freeSearchToggle = document.getElementById('free-search-toggle');
+const fullCatalogLink = document.getElementById('full-catalog-link');
 
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 if (document.body.classList.contains('shared-view')) {
-  sharedTitle.textContent = capitalize(describeFilters(currentFilters()));
+  document.getElementById('page-title').textContent = 'FQ Monturas';
+  const filters = currentFilters();
+  sharedTitle.textContent = capitalize(describeFilters(filters));
   sharedTitleWrap.hidden = false;
   searchWrap.hidden = true;
+  if (!filters.length) fullCatalogLink.hidden = true;
 }
 
 freeSearchToggle.addEventListener('click', () => {
@@ -46,6 +50,32 @@ freeSearchToggle.addEventListener('click', () => {
   search.focus();
 });
 
+function setLoadingProgress(done, total) {
+  const bar = document.getElementById('loading-bar-fill');
+  if (bar) bar.style.width = total ? `${(done / total) * 100}%` : '0%';
+}
+
+function preloadImages(list) {
+  if (!list.length) return Promise.resolve();
+  let done = 0;
+  return Promise.all(
+    list.map(
+      (p) =>
+        new Promise((resolve) => {
+          const img = new Image();
+          const finish = () => {
+            done += 1;
+            setLoadingProgress(done, list.length);
+            resolve();
+          };
+          img.onload = finish;
+          img.onerror = finish;
+          img.src = `/api/photos/${p.id}/image`;
+        })
+    )
+  );
+}
+
 async function loadPhotos() {
   const res = await fetch('/api/photos');
   if (!res.ok) {
@@ -53,6 +83,7 @@ async function loadPhotos() {
     return;
   }
   photos = await res.json();
+  await preloadImages(photos);
   render();
 }
 
