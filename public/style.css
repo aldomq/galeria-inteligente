@@ -543,7 +543,8 @@ body.admin-mode .info-wrap {
 }
 
 .photo-name {
-  margin: 14px 16px 8px;
+  margin: 0;
+  text-align: center;
   font-weight: 700;
   font-size: 0.92rem;
   white-space: nowrap;
@@ -563,6 +564,21 @@ body.admin-mode .info-wrap {
   flex-wrap: wrap;
   gap: 6px;
   min-height: 24px;
+}
+
+.tag-dots {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 10px;
+}
+
+.tag-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .tag {
@@ -906,7 +922,6 @@ body.shared-view #tag-cloud {
   }
 
   .photo-name {
-    margin: 10px 10px 6px;
     font-size: 0.82rem;
   }
 

@@ -214,10 +214,8 @@ function render() {
   if (modalPhotoId) renderModal();
 }
 
-function tagChipsHtml(tags) {
-  return tags
-    .map((t) => `<span class="tag" style="background:${tagColor(t)}">${t}</span>`)
-    .join('');
+function tagDotsHtml(tags) {
+  return tags.map((t) => `<span class="tag-dot" style="background:${tagColor(t)}" title="${t}"></span>`).join('');
 }
 
 function cardHtml(photo) {
@@ -228,10 +226,10 @@ function cardHtml(photo) {
 
   return `
     <div class="card">
-      ${nameHtml}
       <img src="/api/photos/${photo.id}/image" alt="${photo.name}" loading="lazy" data-action="open-modal" data-id="${photo.id}" onload="this.classList.add('loaded')" />
       <div class="card-body">
-        <div class="tags">${tagChipsHtml(photo.tags)}</div>
+        <div class="tag-dots">${tagDotsHtml(photo.tags)}</div>
+        ${nameHtml}
         <button class="share-btn" data-action="share" data-id="${photo.id}" data-filename="${photo.filename}">
           Compartir
         </button>
