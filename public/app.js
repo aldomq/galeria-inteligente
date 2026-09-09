@@ -370,6 +370,10 @@ modal.addEventListener('click', (e) => {
   if (e.target === modal || e.target.closest('[data-action="close-modal"]')) closeModal();
 });
 
+modalNameInput.addEventListener('input', () => {
+  if (modalDraft) modalDraft.name = modalNameInput.value;
+});
+
 modalAddTagBtn.addEventListener('click', () => {
   const tag = modalTagSelect.value;
   if (!tag || !modalDraft || modalDraft.tags.includes(tag)) return;
