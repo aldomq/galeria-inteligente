@@ -344,7 +344,6 @@ async function copyShareLink(btn) {
 }
 
 document.getElementById('share-search-btn').addEventListener('click', (e) => copyShareLink(e.currentTarget));
-document.getElementById('share-view-btn').addEventListener('click', (e) => copyShareLink(e.currentTarget));
 
 document.getElementById('logo-btn').addEventListener('click', () => {
   window.location.href = location.pathname;
