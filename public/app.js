@@ -4,6 +4,8 @@ let activeTag = null;
 let modalPhotoId = null;
 let modalDraft = null; // { name, tags } — cambios locales sin guardar todavía
 let isSaving = false; // bloquea cerrar el modal mientras se guarda
+let categories = [];
+let currentCategoryId = new URLSearchParams(location.search).get('cat') || null;
 
 const STOPWORDS = new Set(['con', 'de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'al', 'un', 'una']);
 
@@ -13,11 +15,7 @@ const STOPWORDS = new Set(['con', 'de', 'del', 'la', 'el', 'los', 'las', 'y', 'e
 // (sin ?t= en la URL) vuelve a la vista de participante.
 const adminToken = new URLSearchParams(location.search).get('t') || '';
 const isAdmin = !!adminToken;
-if (isAdmin) {
-  document.body.classList.add('admin-mode');
-  const manageLink = document.getElementById('manage-tags-link');
-  if (manageLink) manageLink.href = 'etiquetas.html?t=' + encodeURIComponent(adminToken);
-}
+if (isAdmin) document.body.classList.add('admin-mode');
 
 function adminHeaders(extra) {
   return Object.assign({ 'X-Admin-Token': adminToken }, extra || {});
@@ -47,6 +45,11 @@ const modalSaveBtn = document.getElementById('modal-save-btn');
 const searchWrap = document.querySelector('.search-wrap');
 const sharedTitleWrap = document.getElementById('shared-title-wrap');
 const sharedTitle = document.getElementById('shared-title');
+const categoryMenu = document.getElementById('category-menu');
+const categoryBar = document.getElementById('category-bar');
+const categoryNameSpan = document.getElementById('category-name');
+const manageTagsLink = document.getElementById('manage-tags-link');
+const freeSearchToggle = document.getElementById('free-search-toggle');
 
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
@@ -56,6 +59,9 @@ if (document.body.classList.contains('shared-view')) {
   sharedTitle.textContent = capitalize(describeFilters(currentFilters()));
   sharedTitleWrap.hidden = false;
   searchWrap.hidden = true;
+  if (freeSearchToggle && currentCategoryId) {
+    freeSearchToggle.href = 'index.html?cat=' + encodeURIComponent(currentCategoryId);
+  }
 }
 
 // La barra muestra cuántas fotos ya cargaron, pero SIN bloquear la
@@ -89,7 +95,7 @@ function setLoadingProgress(done, total) {
 }
 
 async function loadPhotos() {
-  const res = await fetch('/api/photos');
+  const res = await fetch(`/api/photos?cat=${encodeURIComponent(currentCategoryId)}`);
   if (!res.ok) {
     gallery.innerHTML = `<p class="empty">Todavía no hay una carpeta de Drive conectada. <a class="nav-link" href="connect.html">Conectar ahora →</a></p>`;
     return;
@@ -100,7 +106,7 @@ async function loadPhotos() {
 }
 
 async function loadTags() {
-  const res = await fetch('/api/tags');
+  const res = await fetch(`/api/tags?cat=${encodeURIComponent(currentCategoryId)}`);
   masterTags = await res.json();
   render();
 }
@@ -322,6 +328,7 @@ search.addEventListener('input', render);
 
 async function copyShareLink(btn) {
   const url = new URL(location.origin + location.pathname);
+  if (currentCategoryId) url.searchParams.set('cat', currentCategoryId);
   if (search.value.trim()) url.searchParams.set('q', search.value.trim());
   if (activeTag) url.searchParams.set('tag', activeTag);
 
@@ -447,5 +454,63 @@ modalSaveBtn.addEventListener('click', async () => {
   }
 });
 
-loadPhotos();
-loadTags();
+function categoryMenuHtml() {
+  const manageLink = isAdmin
+    ? `<a class="nav-link" href="categorias.html?t=${encodeURIComponent(adminToken)}">Gestionar categorías →</a>`
+    : '';
+  if (!categories.length) {
+    const empty = isAdmin
+      ? `<p class="empty">Todavía no hay categorías. ${manageLink}</p>`
+      : `<p class="empty">El catálogo está en preparación.</p>`;
+    return empty;
+  }
+  const tokenSuffix = isAdmin ? `&t=${encodeURIComponent(adminToken)}` : '';
+  const cards = categories
+    .map(
+      (c) =>
+        `<a class="category-card" href="index.html?cat=${encodeURIComponent(c.id)}${tokenSuffix}">${c.name}</a>`
+    )
+    .join('');
+  return `<div class="category-grid">${cards}</div>${manageLink ? `<div class="category-manage">${manageLink}</div>` : ''}`;
+}
+
+function showCategoryMenu() {
+  document.body.classList.add('menu-mode');
+  categoryMenu.innerHTML = categoryMenuHtml();
+  categoryMenu.hidden = false;
+}
+
+async function init() {
+  const res = await fetch('/api/categories');
+  categories = await res.json();
+
+  let category = currentCategoryId ? categories.find((c) => c.id === currentCategoryId) : null;
+  if (!category && !currentCategoryId && categories.length === 1) {
+    category = categories[0];
+  }
+
+  if (!category) {
+    currentCategoryId = null;
+    showCategoryMenu();
+    return;
+  }
+
+  currentCategoryId = category.id;
+
+  if (categories.length > 1) {
+    categoryBar.hidden = false;
+    categoryNameSpan.textContent = category.name;
+    const backLink = document.getElementById('category-back-link');
+    if (backLink && isAdmin) backLink.href = 'index.html?t=' + encodeURIComponent(adminToken);
+  }
+
+  if (manageTagsLink && isAdmin) {
+    manageTagsLink.href =
+      'etiquetas.html?t=' + encodeURIComponent(adminToken) + '&cat=' + encodeURIComponent(currentCategoryId);
+  }
+
+  loadPhotos();
+  loadTags();
+}
+
+init();

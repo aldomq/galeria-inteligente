@@ -909,6 +909,72 @@ body.shared-view #tag-cloud {
   padding: 60px 20px;
 }
 
+.category-menu {
+  padding: 0 24px 60px;
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 18px;
+}
+
+.category-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px 16px;
+  color: var(--text);
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.15s;
+}
+
+.category-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  border-color: var(--accent);
+}
+
+.category-manage {
+  text-align: center;
+  margin-top: 24px;
+}
+
+.category-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: -8px;
+}
+
+.category-bar[hidden] {
+  display: none;
+}
+
+.category-name {
+  font-weight: 700;
+  color: var(--text);
+}
+
+body.menu-mode .search-wrap,
+body.menu-mode #tag-cloud,
+body.menu-mode #gallery,
+body.menu-mode #loading-indicator,
+body.menu-mode #manage-tags-link {
+  display: none !important;
+}
+
 /* Celular: menos aire a los lados para aprovechar el ancho, y menos
    padding arriba del header (la mayoría de las visitas van a ser
    desde el teléfono). */

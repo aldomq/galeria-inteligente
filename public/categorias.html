@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Categorías — Catálogo</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Categorías</h1>
+    <a class="nav-link" href="index.html" id="back-link">← Volver al catálogo</a>
+  </header>
+
+  <p id="login-required" class="muted" style="text-align:center" hidden>
+    Necesitas iniciar sesión para gestionar categorías.
+    <a href="/admin/login.html?next=%2Fcategorias.html">Iniciar sesión →</a>
+  </p>
+
+  <section class="tag-manager" id="category-manager-section">
+    <form id="new-category-form">
+      <input id="new-category-input" type="text" placeholder="Nueva categoría (ej. Vinchas)…" autocomplete="off" />
+      <button type="submit">Crear categoría</button>
+    </form>
+    <div id="category-manager-list" class="tag-manager-list"></div>
+  </section>
+
+  <footer class="watermark">
+    Hecho por Aldo Mora · <a href="mailto:aldoismaelmq@gmail.com">aldoismaelmq@gmail.com</a><br />
+    © 2026 Aldo Mora. Todos los derechos reservados.
+  </footer>
+
+  <script src="categorias.js"></script>
+</body>
+</html>

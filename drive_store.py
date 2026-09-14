@@ -97,9 +97,8 @@ def _ensure_public(service, file_id, permissions):
         pass  # si falla, la miniatura cae al proxy (ver cardHtml en app.js)
 
 
-def get_photos():
+def get_photos(folder_id):
     service = _get_service()
-    folder_id = _folder_id()
     photos = []
     page_token = None
     while True:

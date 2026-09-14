@@ -10,8 +10,9 @@ import re
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
+import categories_store
 import drive_connect
 import drive_store
 import tags_store
@@ -26,9 +27,9 @@ ADMIN_AUTH_PATH = ROOT / "admin_auth.json"
 TOKEN_TTL_SECONDS = 5 * 60
 
 # Rutas que requieren el token de admin (login, reconexión de Drive, y
-# cualquier edición: tags, nombres, gestión de etiquetas).
+# cualquier edición: tags, nombres, categorías, gestión de etiquetas).
 ADMIN_API_PATHS = {"/api/web-config", "/api/connect"}
-ADMIN_API_PREFIXES = ("/api/tags",)  # crear/borrar/color de tags
+ADMIN_API_PREFIXES = ("/api/tags", "/api/categories")  # crear/borrar/color
 ADMIN_PHOTO_WRITE_RE = re.compile(r"^/api/photos/([^/]+)/(name|tags)")  # editar foto
 
 PHOTO_IMAGE_RE = re.compile(r"^/api/photos/([^/]+)/image/?$")
@@ -37,6 +38,7 @@ PHOTO_TAGS_RE = re.compile(r"^/api/photos/([^/]+)/tags/?$")
 PHOTO_TAG_RE = re.compile(r"^/api/photos/([^/]+)/tags/([^/]+)$")
 TAG_COLOR_RE = re.compile(r"^/api/tags/([^/]+)/color/?$")
 TAG_RE = re.compile(r"^/api/tags/([^/]+)$")
+CATEGORY_RE = re.compile(r"^/api/categories/([^/]+)$")
 
 MIME_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -60,6 +62,11 @@ def _make_token():
     expiry = int(time.time()) + TOKEN_TTL_SECONDS
     sig = hmac.new(secret.encode(), str(expiry).encode(), hashlib.sha256).hexdigest()
     return f"{expiry}.{sig}"
+
+
+def _query_param(path, key):
+    values = parse_qs(urlsplit(path).query).get(key)
+    return values[0] if values else None
 
 
 def _valid_token(token):
@@ -125,25 +132,42 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path == "/api/photos":
+        path = urlsplit(self.path).path
+
+        if path == "/api/categories":
             try:
-                self._json(200, drive_store.get_photos())
+                self._json(200, categories_store.get_categories())
             except Exception as err:
                 self._json(500, {"error": str(err)})
             return
 
-        if self.path == "/api/tags":
-            self._json(200, tags_store.get_tags())
+        if path == "/api/photos":
+            cat = _query_param(self.path, "cat")
+            if not cat:
+                self._json(200, [])
+                return
+            try:
+                self._json(200, drive_store.get_photos(cat))
+            except Exception as err:
+                self._json(500, {"error": str(err)})
             return
 
-        if self.path == "/api/web-config":
+        if path == "/api/tags":
+            cat = _query_param(self.path, "cat")
+            if not cat:
+                self._json(200, [])
+                return
+            self._json(200, tags_store.get_tags(cat))
+            return
+
+        if path == "/api/web-config":
             if not self._require_admin_token():
                 return
             web = json.loads((ROOT / "web_client.json").read_text())
             self._json(200, {"apiKey": web["api_key"], "clientId": web["client_id"]})
             return
 
-        match = PHOTO_IMAGE_RE.match(self.path)
+        match = PHOTO_IMAGE_RE.match(path)
         if match:
             try:
                 content, mime = drive_store.get_image(match.group(1))
@@ -155,7 +179,9 @@ class Handler(BaseHTTPRequestHandler):
         self._static(self.path)
 
     def do_POST(self):
-        if self.path == "/api/admin-login":
+        path = urlsplit(self.path).path
+
+        if path == "/api/admin-login":
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length) or b"{}")
             creds = _admin_creds()
@@ -169,45 +195,69 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         needs_auth = (
-            self.path in ADMIN_API_PATHS
-            or self.path.startswith(ADMIN_API_PREFIXES)
-            or ADMIN_PHOTO_WRITE_RE.match(self.path)
+            path in ADMIN_API_PATHS
+            or path.startswith(ADMIN_API_PREFIXES)
+            or ADMIN_PHOTO_WRITE_RE.match(path)
         )
         if needs_auth and not self._require_admin_token():
             return
 
-        if self.path == "/api/connect":
+        if path == "/api/connect":
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length) or b"{}")
             try:
                 drive_connect.exchange_code(body["code"])
                 drive_connect.save_folder(body["folder_id"], body["folder_name"])
                 drive_store.reset()
+                tags_store.reset()
+                categories_store.reset()
                 self._json(200, {"ok": True})
             except Exception as err:
                 self._json(500, {"error": str(err)})
             return
 
-        if self.path == "/api/tags":
+        if path == "/api/categories":
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length) or b"{}")
             try:
-                self._json(200, tags_store.add_tag(body.get("name") or ""))
+                self._json(200, categories_store.add_category(body.get("name") or ""))
+            except ValueError as err:
+                self._json(400, {"error": str(err)})
+            except Exception as err:
+                self._json(500, {"error": str(err)})
+            return
+
+        if path == "/api/tags":
+            cat = _query_param(self.path, "cat")
+            if not cat:
+                self._json(400, {"error": "Falta la categoría."})
+                return
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length) or b"{}")
+            try:
+                self._json(200, tags_store.add_tag(cat, body.get("name") or ""))
             except ValueError as err:
                 self._json(400, {"error": str(err)})
             return
 
-        color_match = TAG_COLOR_RE.match(self.path)
+        color_match = TAG_COLOR_RE.match(path)
         if color_match:
+            cat = _query_param(self.path, "cat")
+            if not cat:
+                self._json(400, {"error": "Falta la categoría."})
+                return
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length) or b"{}")
             try:
-                self._json(200, tags_store.set_color(unquote(color_match.group(1)), body.get("color") or ""))
+                self._json(
+                    200,
+                    tags_store.set_color(cat, unquote(color_match.group(1)), body.get("color") or ""),
+                )
             except ValueError as err:
                 self._json(400, {"error": str(err)})
             return
 
-        name_match = PHOTO_NAME_RE.match(self.path)
+        name_match = PHOTO_NAME_RE.match(path)
         if name_match:
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length) or b"{}")
@@ -219,7 +269,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(500, {"error": str(err)})
             return
 
-        match = PHOTO_TAGS_RE.match(self.path)
+        match = PHOTO_TAGS_RE.match(path)
         if not match:
             self.send_error(404)
             return
@@ -237,16 +287,29 @@ class Handler(BaseHTTPRequestHandler):
             self._json(500, {"error": str(err)})
 
     def do_DELETE(self):
-        needs_auth = self.path.startswith(ADMIN_API_PREFIXES) or ADMIN_PHOTO_WRITE_RE.match(self.path)
+        path = urlsplit(self.path).path
+        needs_auth = path.startswith(ADMIN_API_PREFIXES) or ADMIN_PHOTO_WRITE_RE.match(path)
         if needs_auth and not self._require_admin_token():
             return
 
-        tag_match = TAG_RE.match(self.path)
-        if tag_match:
-            self._json(200, tags_store.remove_tag(unquote(tag_match.group(1))))
+        category_match = CATEGORY_RE.match(path)
+        if category_match:
+            try:
+                self._json(200, categories_store.remove_category(unquote(category_match.group(1))))
+            except Exception as err:
+                self._json(500, {"error": str(err)})
             return
 
-        match = PHOTO_TAG_RE.match(self.path)
+        tag_match = TAG_RE.match(path)
+        if tag_match:
+            cat = _query_param(self.path, "cat")
+            if not cat:
+                self._json(400, {"error": "Falta la categoría."})
+                return
+            self._json(200, tags_store.remove_tag(cat, unquote(tag_match.group(1))))
+            return
+
+        match = PHOTO_TAG_RE.match(path)
         if not match:
             self.send_error(404)
             return

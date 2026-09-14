@@ -1,8 +1,8 @@
-"""Registro maestro de etiquetas disponibles (independiente de qué fotos
-las tengan asignadas), cada una con un color. Se guarda como un archivo
-(_tags.json) dentro de la misma carpeta de Drive conectada — así
-sobrevive a reinicios del servidor, a diferencia de un archivo local en
-un host con disco efímero.
+"""Registro de etiquetas disponibles, independiente de qué fotos las
+tengan asignadas, cada una con un color. Es por categoría — cada
+subcarpeta de categoría tiene su propio _tags.json, así las etiquetas
+de "vinchas" no se mezclan con las de "monturas". Se guarda en Drive
+para sobrevivir a reinicios del servidor.
 """
 import io
 import json
@@ -18,16 +18,18 @@ DEFAULT_PALETTE = [
     "#06b6d4", "#a855f7", "#eab308", "#ef4444",
 ]
 
-_file_id = None
+_file_ids = {}  # category folder_id -> id del _tags.json dentro de esa carpeta
 
 
-def _find_or_create_file():
-    global _file_id
-    if _file_id:
-        return _file_id
+def reset():
+    _file_ids.clear()
+
+
+def _find_or_create_file(folder_id):
+    if folder_id in _file_ids:
+        return _file_ids[folder_id]
 
     service = drive_store._get_service()
-    folder_id = drive_store._folder_id()
     resp = (
         service.files()
         .list(
@@ -38,8 +40,8 @@ def _find_or_create_file():
     )
     files = resp.get("files", [])
     if files:
-        _file_id = files[0]["id"]
-        return _file_id
+        _file_ids[folder_id] = files[0]["id"]
+        return _file_ids[folder_id]
 
     media = MediaIoBaseUpload(io.BytesIO(b"[]"), mimetype="application/json")
     created = (
@@ -47,8 +49,8 @@ def _find_or_create_file():
         .create(body={"name": TAGS_FILENAME, "parents": [folder_id]}, media_body=media, fields="id")
         .execute()
     )
-    _file_id = created["id"]
-    return _file_id
+    _file_ids[folder_id] = created["id"]
+    return _file_ids[folder_id]
 
 
 def _normalize(raw):
@@ -62,16 +64,16 @@ def _normalize(raw):
     return tags
 
 
-def get_tags():
+def get_tags(folder_id):
     service = drive_store._get_service()
-    file_id = _find_or_create_file()
+    file_id = _find_or_create_file(folder_id)
     content = service.files().get_media(fileId=file_id).execute()
     return sorted(_normalize(json.loads(content or b"[]")), key=lambda t: t["name"])
 
 
-def _write(tags):
+def _write(folder_id, tags):
     service = drive_store._get_service()
-    file_id = _find_or_create_file()
+    file_id = _find_or_create_file(folder_id)
     ordered = sorted(tags, key=lambda t: t["name"])
     media = MediaIoBaseUpload(
         io.BytesIO(json.dumps(ordered, ensure_ascii=False).encode("utf-8")),
@@ -81,25 +83,25 @@ def _write(tags):
     return ordered
 
 
-def add_tag(name):
+def add_tag(folder_id, name):
     clean = name.strip().lower()
     if not clean:
         raise ValueError("nombre de etiqueta vacío")
-    tags = get_tags()
+    tags = get_tags(folder_id)
     if not any(t["name"] == clean for t in tags):
         color = DEFAULT_PALETTE[len(tags) % len(DEFAULT_PALETTE)]
         tags.append({"name": clean, "color": color})
-        return _write(tags)
+        return _write(folder_id, tags)
     return tags
 
 
-def remove_tag(name):
-    tags = [t for t in get_tags() if t["name"] != name]
-    return _write(tags)
+def remove_tag(folder_id, name):
+    tags = [t for t in get_tags(folder_id) if t["name"] != name]
+    return _write(folder_id, tags)
 
 
-def set_color(name, color):
-    tags = get_tags()
+def set_color(folder_id, name, color):
+    tags = get_tags(folder_id)
     found = False
     for t in tags:
         if t["name"] == name:
@@ -107,4 +109,4 @@ def set_color(name, color):
             found = True
     if not found:
         raise ValueError("etiqueta no encontrada")
-    return _write(tags)
+    return _write(folder_id, tags)
