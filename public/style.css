@@ -968,37 +968,22 @@ body.shared-view #tag-cloud {
   margin-top: 24px;
 }
 
-.category-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: -8px;
-  font-size: 0.88rem;
-}
-
 .category-bar[hidden] {
   display: none;
 }
 
 .category-back {
-  color: var(--accent);
+  display: inline-block;
+  font-size: 0.78rem;
+  color: var(--muted);
   text-decoration: none;
   font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .category-back:hover {
-  text-decoration: underline;
-}
-
-.category-name {
-  font-weight: 700;
-  color: var(--text);
-}
-
-.category-name::before {
-  content: '· ';
-  color: var(--muted);
+  color: var(--accent);
 }
 
 body.menu-mode .search-wrap,

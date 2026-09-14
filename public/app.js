@@ -47,7 +47,6 @@ const sharedTitleWrap = document.getElementById('shared-title-wrap');
 const sharedTitle = document.getElementById('shared-title');
 const categoryMenu = document.getElementById('category-menu');
 const categoryBar = document.getElementById('category-bar');
-const categoryNameSpan = document.getElementById('category-name');
 const manageTagsLink = document.getElementById('manage-tags-link');
 const freeSearchToggle = document.getElementById('free-search-toggle');
 
@@ -499,7 +498,7 @@ async function init() {
 
   if (categories.length > 1) {
     categoryBar.hidden = false;
-    categoryNameSpan.textContent = category.name;
+    document.getElementById('page-title').textContent = category.name;
     const backLink = document.getElementById('category-back-link');
     if (backLink && isAdmin) backLink.href = 'index.html?t=' + encodeURIComponent(adminToken);
   }
