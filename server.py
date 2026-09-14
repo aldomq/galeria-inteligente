@@ -116,6 +116,14 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
+    def do_HEAD(self):
+        # UptimeRobot (y monitores similares) usan HEAD para revisar que el
+        # sitio siga despierto; BaseHTTPRequestHandler devuelve 501 si no
+        # se implementa.
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+
     def do_GET(self):
         if self.path == "/api/photos":
             try:
