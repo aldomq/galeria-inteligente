@@ -8,11 +8,13 @@ cada archivo de Drive, así viajan con la foto si algún día la mueves.
 """
 import io
 import mimetypes
+import re
 from pathlib import Path
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
 
 import drive_connect
@@ -24,6 +26,10 @@ SCOPES = drive_connect.SCOPES
 _service = None
 _image_cache = {}  # file_id -> (bytes, mime) — evita volver a pedirle la
                     # misma foto a Drive en cada vista.
+_mime_cache = {}  # file_id -> mimeType, tomado del listado para no pedirlo
+                   # de nuevo al servir cada imagen.
+
+_THUMBNAIL_SIZE = 800  # ancho en px para las miniaturas de la grilla.
 
 
 def reset():
@@ -31,6 +37,7 @@ def reset():
     global _service
     _service = None
     _image_cache.clear()
+    _mime_cache.clear()
 
 
 def _folder_id():
@@ -65,6 +72,30 @@ def _tags_from_properties(properties):
     return [t for t in raw.split(",") if t]
 
 
+def _resized_thumbnail(link):
+    if not link:
+        return None
+    return re.sub(r"=s\d+", f"=s{_THUMBNAIL_SIZE}", link)
+
+
+def _ensure_public(service, file_id, permissions):
+    """La grilla carga las miniaturas directo desde Google (en paralelo),
+    en vez de una por una a través de nuestro servidor — mucho más rápido.
+    Para eso cada foto necesita ser visible para "cualquiera con el
+    enlace"; se activa una sola vez por foto (se nota en el propio
+    listado, así que no cuesta una llamada extra en las siguientes)."""
+    if any(p.get("type") == "anyone" for p in permissions or []):
+        return
+    try:
+        service.permissions().create(
+            fileId=file_id,
+            body={"role": "reader", "type": "anyone"},
+            fields="id",
+        ).execute()
+    except HttpError:
+        pass  # si falla, la miniatura cae al proxy (ver cardHtml en app.js)
+
+
 def get_photos():
     service = _get_service()
     folder_id = _folder_id()
@@ -75,19 +106,26 @@ def get_photos():
             service.files()
             .list(
                 q=f"'{folder_id}' in parents and mimeType contains 'image/' and trashed = false",
-                fields="nextPageToken, files(id, name, properties)",
+                fields=(
+                    "nextPageToken, files(id, name, properties, mimeType, "
+                    "thumbnailLink, permissions(type))"
+                ),
                 pageToken=page_token,
             )
             .execute()
         )
         for f in resp.get("files", []):
             properties = f.get("properties") or {}
+            file_id = f["id"]
+            _mime_cache[file_id] = f.get("mimeType")
+            _ensure_public(service, file_id, f.get("permissions"))
             photos.append(
                 {
-                    "id": f["id"],
+                    "id": file_id,
                     "filename": f["name"],
                     "name": properties.get("display_name") or f["name"],
                     "tags": _tags_from_properties(properties),
+                    "thumbnail": _resized_thumbnail(f.get("thumbnailLink")),
                 }
             )
         page_token = resp.get("nextPageToken")
@@ -113,14 +151,19 @@ def get_image(file_id):
         return _image_cache[file_id]
 
     service = _get_service()
-    meta = service.files().get(fileId=file_id, fields="mimeType, name").execute()
+    mime = _mime_cache.get(file_id)
+    if not mime:
+        # Solo pasa si se pide la imagen sin haber listado las fotos antes.
+        meta = service.files().get(fileId=file_id, fields="mimeType, name").execute()
+        mime = meta.get("mimeType") or mimetypes.guess_type(meta.get("name", ""))[0] or "application/octet-stream"
+        _mime_cache[file_id] = mime
+
     request = service.files().get_media(fileId=file_id)
     buf = io.BytesIO()
     downloader = MediaIoBaseDownload(buf, request)
     done = False
     while not done:
         _, done = downloader.next_chunk()
-    mime = meta.get("mimeType") or mimetypes.guess_type(meta.get("name", ""))[0] or "application/octet-stream"
     result = (buf.getvalue(), mime)
     _image_cache[file_id] = result
     return result

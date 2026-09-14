@@ -78,7 +78,7 @@ function trackLoadingProgress(list) {
     const img = new Image();
     img.onload = finish;
     img.onerror = finish;
-    img.src = `/api/photos/${p.id}/image`;
+    img.src = p.thumbnail || `/api/photos/${p.id}/image`;
   });
 }
 
@@ -226,10 +226,12 @@ function cardHtml(photo) {
   const hasCustomName = photo.name !== photo.filename;
   const nameHtml =
     isShared && !hasCustomName ? '' : `<p class="photo-name" title="${photo.name}">${photo.name}</p>`;
+  const fallback = `/api/photos/${photo.id}/image`;
+  const src = photo.thumbnail || fallback;
 
   return `
     <div class="card">
-      <img src="/api/photos/${photo.id}/image" alt="${photo.name}" loading="lazy" data-action="open-modal" data-id="${photo.id}" onload="this.classList.add('loaded')" />
+      <img src="${src}" alt="${photo.name}" loading="lazy" data-action="open-modal" data-id="${photo.id}" data-fallback="${fallback}" onload="this.classList.add('loaded')" onerror="this.onerror=null;this.src=this.dataset.fallback;" />
       <div class="card-body">
         <div class="tag-dots">${tagDotsHtml(photo.tags)}</div>
         ${nameHtml}
