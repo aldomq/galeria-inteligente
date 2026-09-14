@@ -1,7 +1,8 @@
-"""Capa de datos respaldada por Google Drive. Usa solo drive.file (scope
-"no sensible", sin necesidad de verificación de marca para publicar la
-app) — el acceso a archivos preexistentes lo otorga el Picker al elegir
-la carpeta.
+"""Capa de datos respaldada por Google Drive. Usa drive.readonly +
+drive.metadata para listar fotos de forma confiable — comprobado que
+drive.file solo NO lista archivos preexistentes en la carpeta (solo ve
+los que la app misma creó, como _tags.json), aunque sí funcionan las
+operaciones por ID (leer/editar una foto puntual).
 
 Tags: se guardan como la propiedad `tags` (string separado por comas) en
 cada archivo de Drive, así viajan con la foto si algún día la mueves.
