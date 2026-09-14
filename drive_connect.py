@@ -18,14 +18,12 @@ TOKEN_PATH = ROOT / "token.json"
 FOLDER_CONFIG_PATH = ROOT / "data" / "folder.json"
 
 SCOPES = [
-    # Lectura confiable de todas las fotos de la carpeta, sin importar quién
-    # las suba — drive.file solo (probado dos veces) puede "olvidar" el
-    # acceso a archivos ya existentes sin razón clara.
-    "https://www.googleapis.com/auth/drive.readonly",
-    # Escribir las etiquetas como propiedades de cada foto.
-    "https://www.googleapis.com/auth/drive.metadata",
-    # Crear y actualizar el contenido de _tags.json (el registro de
-    # etiquetas) — ese archivo lo crea la app, así que este scope alcanza.
+    # Alcanza para leer, editar y crear archivos en la carpeta elegida por
+    # el Picker (incluye los ya existentes, no solo los creados por la
+    # app). drive.readonly y drive.metadata se probaron antes pero Google
+    # los marca como "restringidos": exigen verificación de marca/dominio
+    # para publicar la app, algo excesivo para una herramienta de un solo
+    # administrador. drive.file es "no sensible" y no la requiere.
     "https://www.googleapis.com/auth/drive.file",
 ]
 

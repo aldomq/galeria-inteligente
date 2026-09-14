@@ -62,8 +62,6 @@ function onPicked(data) {
 }
 
 const PERMANENT_SCOPES = [
-  'https://www.googleapis.com/auth/drive.readonly',
-  'https://www.googleapis.com/auth/drive.metadata',
   'https://www.googleapis.com/auth/drive.file',
 ].join(' ');
 
