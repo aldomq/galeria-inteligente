@@ -3,6 +3,7 @@ let masterTags = [];
 let activeTag = null;
 let modalPhotoId = null;
 let modalDraft = null; // { name, tags } — cambios locales sin guardar todavía
+let isSaving = false; // bloquea cerrar el modal mientras se guarda
 
 const STOPWORDS = new Set(['con', 'de', 'del', 'la', 'el', 'los', 'las', 'y', 'en', 'al', 'un', 'una']);
 
@@ -369,6 +370,7 @@ gallery.addEventListener('click', async (e) => {
 });
 
 modal.addEventListener('click', (e) => {
+  if (isSaving) return;
   if (e.target === modal || e.target.closest('[data-action="close-modal"]')) closeModal();
 });
 
@@ -400,8 +402,11 @@ modalSaveBtn.addEventListener('click', async () => {
   const toRemove = photo.tags.filter((t) => !modalDraft.tags.includes(t));
 
   const original = modalSaveBtn.textContent;
+  const closeBtn = modal.querySelector('.modal-close');
   modalSaveBtn.disabled = true;
   modalSaveBtn.textContent = 'Guardando…';
+  isSaving = true;
+  if (closeBtn) closeBtn.disabled = true;
 
   try {
     if (newName !== photo.name) {
@@ -430,12 +435,15 @@ modalSaveBtn.addEventListener('click', async () => {
     photos = photos.map((p) =>
       p.id === modalPhotoId ? { ...p, name: newName, tags: [...modalDraft.tags] } : p
     );
+    isSaving = false;
     closeModal();
     render();
   } catch (err) {
+    isSaving = false;
     alert('No se pudo guardar: ' + err.message);
     modalSaveBtn.disabled = false;
     modalSaveBtn.textContent = original;
+    if (closeBtn) closeBtn.disabled = false;
   }
 });
 

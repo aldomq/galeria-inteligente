@@ -796,6 +796,11 @@ body.admin-mode .info-wrap {
   background: rgba(0, 0, 0, 0.65);
 }
 
+.modal-close:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .modal img {
   width: 100%;
   border-radius: 12px;
