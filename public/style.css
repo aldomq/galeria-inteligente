@@ -967,6 +967,16 @@ body.shared-view #tag-cloud {
   opacity: 0.3;
 }
 
+.category-card[data-name="Cabezadas"]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/cabezadas-pattern.jpg');
+  background-size: 64px;
+  background-repeat: repeat;
+  opacity: 0.3;
+}
+
 .category-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
