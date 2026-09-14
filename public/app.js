@@ -467,7 +467,7 @@ function categoryMenuHtml() {
   const cards = categories
     .map(
       (c) =>
-        `<a class="category-card" data-name="${c.name}" href="index.html?cat=${encodeURIComponent(c.id)}${tokenSuffix}"><span>${c.name}</span></a>`
+        `<a class="category-card" style="--pattern:url('assets/${normalize(c.name)}-pattern.jpg')" href="index.html?cat=${encodeURIComponent(c.id)}${tokenSuffix}"><span>${c.name}</span></a>`
     )
     .join('');
   return `<div class="category-grid">${cards}</div>${manageLink ? `<div class="category-manage">${manageLink}</div>` : ''}`;

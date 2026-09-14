@@ -947,31 +947,11 @@ body.shared-view #tag-cloud {
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
-.category-card[data-name="Monturas"]::before {
+.category-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: url('assets/montura-pattern.jpg');
-  background-size: 64px;
-  background-repeat: repeat;
-  opacity: 0.3;
-}
-
-.category-card[data-name="Aperos"]::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url('assets/aperos-pattern.jpg');
-  background-size: 64px;
-  background-repeat: repeat;
-  opacity: 0.3;
-}
-
-.category-card[data-name="Cabezadas"]::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url('assets/cabezadas-pattern.jpg');
+  background-image: var(--pattern, none);
   background-size: 64px;
   background-repeat: repeat;
   opacity: 0.3;
